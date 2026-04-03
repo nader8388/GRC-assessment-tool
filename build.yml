@@ -1,0 +1,150 @@
+name: Build Windows Installer
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build:
+    name: Build Windows Installer
+    runs-on: windows-latest
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Node.js ───────────────────────────────────────────
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # ── 3. Verify tools ──────────────────────────────────────
+      - name: Verify build environment
+        shell: pwsh
+        run: |
+          Write-Host "Node:    $(node --version)"
+          Write-Host "npm:     $(npm --version)"
+          Write-Host "Python:  $(python --version 2>&1)"
+          Write-Host "OS:      $([System.Environment]::OSVersion.VersionString)"
+
+          # Check Visual Studio Build Tools
+          $vsWhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          if (Test-Path $vsWhere) {
+            $installs = & $vsWhere -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -format json | ConvertFrom-Json
+            if ($installs.Count -gt 0) {
+              Write-Host "VS C++:  $($installs[0].installationVersion) - OK"
+            } else {
+              Write-Host "VS C++:  NOT FOUND"
+            }
+          } else {
+            Write-Host "VS C++:  vswhere not found"
+          }
+
+      # ── 4. Install npm packages (skip postinstall for now) ────
+      # We run electron-rebuild as a separate step so errors are clear
+      - name: Install npm packages
+        run: npm ci --ignore-scripts
+        env:
+          npm_config_msvs_version: '2022'
+
+      # ── 5. Rebuild native modules for Electron ────────────────
+      # This compiles better-sqlite3 native .node binary specifically
+      # for the Electron version defined in package.json
+      - name: Rebuild better-sqlite3 for Electron
+        shell: pwsh
+        run: |
+          Write-Host "Rebuilding better-sqlite3 native module..."
+          npx @electron/rebuild -f -w better-sqlite3 --module-dir . 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host ""
+            Write-Host "Rebuild failed. Trying with explicit Node ABI version..."
+            $electronVer = (Get-Content package.json | ConvertFrom-Json).devDependencies.electron
+            Write-Host "Electron version: $electronVer"
+            npx @electron/rebuild -f -w better-sqlite3 2>&1
+          }
+          Write-Host "Done. Exit code: $LASTEXITCODE"
+        env:
+          npm_config_msvs_version: '2022'
+
+      # ── 6. Verify native module compiled ─────────────────────
+      - name: Verify better-sqlite3 compiled
+        shell: pwsh
+        run: |
+          $nodeFile = Get-ChildItem -Recurse "node_modules\better-sqlite3\build\Release\*.node" -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($nodeFile) {
+            Write-Host "Native module found: $($nodeFile.FullName)"
+            Write-Host "Size: $([math]::Round($nodeFile.Length / 1KB, 1)) KB"
+          } else {
+            Write-Error "better-sqlite3 .node file NOT FOUND - rebuild failed"
+            exit 1
+          }
+
+      # ── 7. Build installer ───────────────────────────────────
+      - name: Build installer with electron-builder
+        shell: pwsh
+        run: |
+          Write-Host "Starting electron-builder..."
+          npm run build:nsis 2>&1
+          Write-Host "electron-builder exit code: $LASTEXITCODE"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK:         ${{ secrets.WIN_CERT_BASE64 }}
+          CSC_KEY_PASSWORD: ${{ secrets.WIN_CERT_PASSWORD }}
+
+      # ── 8. Verify output ─────────────────────────────────────
+      - name: Verify installer was created
+        shell: pwsh
+        run: |
+          Write-Host "Contents of dist\ folder:"
+          Get-ChildItem "dist\" -ErrorAction SilentlyContinue | Format-Table Name, Length, LastWriteTime
+
+          $exe = Get-ChildItem "dist\*.exe" | Select-Object -First 1
+          if ($exe) {
+            Write-Host ""
+            Write-Host "Installer: $($exe.Name)"
+            Write-Host "Size:      $([math]::Round($exe.Length / 1MB, 1)) MB"
+            $sig = Get-AuthenticodeSignature $exe.FullName
+            Write-Host "Signed:    $($sig.Status)"
+          } else {
+            Write-Error "No .exe found in dist\ - build failed"
+            exit 1
+          }
+
+      # ── 9. Upload artifact ───────────────────────────────────
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: GRC-Assessment-Platform-Installer
+          path: dist/GRC-Assessment-Platform-Setup-*.exe
+          retention-days: 90
+
+      # ── 10. Create GitHub Release on tag push ────────────────
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/GRC-Assessment-Platform-Setup-*.exe
+          name: GRC Assessment Platform ${{ github.ref_name }}
+          body: |
+            ## GRC Assessment Platform ${{ github.ref_name }}
+
+            ### Install
+            1. Download `GRC-Assessment-Platform-Setup-*.exe`
+            2. Run it — no other software required
+            3. Follow the wizard (Next -> Install -> Finish)
+
+            ### Data location
+            `%APPDATA%\GRC Assessment Platform\grc_assessments.db`
+
+            ### AI Assessment
+            Open Settings after install to add your Anthropic API key.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
