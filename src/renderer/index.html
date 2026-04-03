@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src https://api.anthropic.com;">
+<title>GRC Assessment Platform</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#0d1117;--surface:#161b22;--s2:#1f2937;--border:#30363d;--accent:#58a6ff;--green:#3fb950;--yellow:#d29922;--red:#f85149;--orange:#e3813b;--text:#e6edf3;--muted:#7d8590;--mono:'Courier New',monospace;--sans:'Segoe UI',system-ui,sans-serif;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;display:flex;flex-direction:column;}
+
+header{height:52px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:12px;flex-shrink:0;z-index:100;-webkit-app-region:drag;}
+header *{-webkit-app-region:no-drag;}
+.logo{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent);letter-spacing:2px;white-space:nowrap;}
+.logo span{color:var(--muted);}
+.header-mid{flex:1;display:flex;align-items:center;gap:8px;}
+.active-badge{display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;transition:border-color .15s;}
+.active-badge:hover{border-color:var(--accent);}
+.active-badge .ab-dot{width:8px;height:8px;border-radius:50%;}
+.active-badge .ab-name{font-weight:500;}
+.active-badge .ab-change{color:var(--muted);font-size:11px;margin-left:4px;}
+.hdr-right{display:flex;gap:8px;}
+
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border-radius:6px;font-size:12px;font-family:var(--sans);cursor:pointer;border:1px solid var(--border);background:var(--s2);color:var(--text);transition:all .15s;white-space:nowrap;}
+.btn:hover{border-color:var(--accent);color:var(--accent);}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#0d1117;font-weight:600;}
+.btn-primary:hover{background:#79c0ff;color:#0d1117;}
+.btn-success{background:#0f2d18;border-color:var(--green);color:var(--green);}
+.btn-success:hover{background:#1a3d24;}
+.btn-danger{border-color:var(--red);color:var(--red);}
+.btn-danger:hover{background:rgba(248,81,73,.08);}
+.btn-settings{border-color:rgba(163,113,247,.4);color:#a371f7;}
+.btn-settings:hover{background:rgba(163,113,247,.1);}
+
+.app-body{flex:1;display:flex;overflow:hidden;height:calc(100vh - 52px);}
+
+/* ══ PICKER ══ */
+#picker-screen{position:absolute;inset:0;top:52px;background:var(--bg);z-index:90;display:flex;flex-direction:column;overflow-y:auto;}
+.picker-inner{max-width:1100px;margin:0 auto;padding:40px 32px;width:100%;}
+.picker-title{font-size:26px;font-weight:700;margin-bottom:6px;}
+.picker-sub{color:var(--muted);font-size:14px;margin-bottom:36px;}
+.standards-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:40px;}
+.std-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;}
+.std-card::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity .2s;border-radius:12px;}
+.std-card:hover{transform:translateY(-2px);}
+.std-card:hover::before{opacity:1;}
+.std-card.selected{transform:translateY(-2px);}
+.std-card.selected::before{opacity:1;}
+.std-dot{width:12px;height:12px;border-radius:50%;margin-bottom:16px;}
+.std-id{font-family:var(--mono);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;font-weight:700;}
+.std-name{font-size:16px;font-weight:600;margin-bottom:6px;line-height:1.3;}
+.std-desc{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:16px;}
+.std-meta{display:flex;gap:10px;flex-wrap:wrap;}
+.std-pill{font-size:11px;padding:3px 9px;border-radius:99px;background:var(--s2);color:var(--muted);border:1px solid var(--border);}
+.std-progress{margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
+.std-prog-bar{height:4px;background:var(--bg);border-radius:99px;overflow:hidden;margin-bottom:6px;}
+.std-prog-fill{height:100%;border-radius:99px;}
+.std-prog-label{font-size:11px;color:var(--muted);display:flex;justify-content:space-between;}
+.std-checkmark{position:absolute;top:14px;right:14px;width:20px;height:20px;border-radius:50%;display:none;align-items:center;justify-content:center;font-size:11px;}
+.std-card.selected .std-checkmark{display:flex;}
+.picker-actions{display:flex;gap:12px;align-items:center;}
+
+.std-iso .std-dot{background:#58a6ff;}.std-iso .std-id{color:#58a6ff;}.std-iso::before{background:linear-gradient(135deg,rgba(88,166,255,.06),transparent 60%);}.std-iso.selected{border-color:rgba(88,166,255,.5);}.std-iso .std-checkmark{background:rgba(88,166,255,.2);color:#58a6ff;}
+.std-fedramp .std-dot{background:#3fb950;}.std-fedramp .std-id{color:#3fb950;}.std-fedramp::before{background:linear-gradient(135deg,rgba(63,185,80,.06),transparent 60%);}.std-fedramp.selected{border-color:rgba(63,185,80,.5);}.std-fedramp .std-checkmark{background:rgba(63,185,80,.2);color:#3fb950;}
+.std-soc2 .std-dot{background:#d29922;}.std-soc2 .std-id{color:#d29922;}.std-soc2::before{background:linear-gradient(135deg,rgba(210,153,34,.06),transparent 60%);}.std-soc2.selected{border-color:rgba(210,153,34,.5);}.std-soc2 .std-checkmark{background:rgba(210,153,34,.2);color:#d29922;}
+.std-nist .std-dot{background:#e3813b;}.std-nist .std-id{color:#e3813b;}.std-nist::before{background:linear-gradient(135deg,rgba(227,129,59,.06),transparent 60%);}.std-nist.selected{border-color:rgba(227,129,59,.5);}.std-nist .std-checkmark{background:rgba(227,129,59,.2);color:#e3813b;}
+.std-pci .std-dot{background:#f85149;}.std-pci .std-id{color:#f85149;}.std-pci::before{background:linear-gradient(135deg,rgba(248,81,73,.06),transparent 60%);}.std-pci.selected{border-color:rgba(248,81,73,.5);}.std-pci .std-checkmark{background:rgba(248,81,73,.2);color:#f85149;}
+.std-hipaa .std-dot{background:#a371f7;}.std-hipaa .std-id{color:#a371f7;}.std-hipaa::before{background:linear-gradient(135deg,rgba(163,113,247,.06),transparent 60%);}.std-hipaa.selected{border-color:rgba(163,113,247,.5);}.std-hipaa .std-checkmark{background:rgba(163,113,247,.2);color:#a371f7;}
+
+/* ══ MAIN APP ══ */
+#main-app{flex:1;display:flex;overflow:hidden;display:none;}
+.sidebar{width:265px;min-width:265px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.sidebar-top{padding:12px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:8px;}
+.s-input{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:6px;font-size:12px;font-family:var(--sans);outline:none;transition:border-color .15s;}
+.s-input:focus{border-color:var(--accent);}
+.s-input::placeholder{color:var(--muted);}
+.filter-row{display:flex;gap:4px;flex-wrap:wrap;}
+.chip{padding:2px 8px;border-radius:99px;font-size:11px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;transition:all .15s;font-family:var(--sans);}
+.chip:hover{border-color:var(--muted);color:var(--text);}
+.chip.active{border-color:var(--accent);color:var(--accent);background:rgba(88,166,255,.08);}
+.chip.cg.active{border-color:var(--green);color:var(--green);background:rgba(63,185,80,.08);}
+.chip.cy.active{border-color:var(--yellow);color:var(--yellow);background:rgba(210,153,34,.08);}
+.chip.cr.active{border-color:var(--red);color:var(--red);background:rgba(248,81,73,.08);}
+.chip.cm.active{border-color:var(--muted);color:var(--muted);background:rgba(125,133,144,.08);}
+.chip.cu.active{border-color:#444c56;color:var(--muted);}
+.ctrl-list{overflow-y:auto;flex:1;}
+.ctrl-list::-webkit-scrollbar{width:4px;}
+.ctrl-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.group-label{padding:7px 13px 4px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);position:sticky;top:0;background:var(--surface);z-index:1;border-bottom:1px solid var(--border);}
+.ctrl-item{padding:8px 13px;border-bottom:1px solid rgba(48,54,61,.4);cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .1s;}
+.ctrl-item:hover{background:var(--s2);}
+.ctrl-item.sel{background:rgba(88,166,255,.09);border-left:2px solid var(--accent);padding-left:11px;}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;background:var(--border);}
+.dot.pass,.dot.conform,.dot.met,.dot.yes{background:var(--green);}
+.dot.fail,.dot.nonconform,.dot.notmet,.dot.no{background:var(--red);}
+.dot.partial,.dot.observation{background:var(--yellow);}
+.dot.na,.dot.compensating{background:var(--muted);}
+.ctrl-id-sm{font-family:var(--mono);font-size:10px;color:var(--accent);flex-shrink:0;min-width:48px;}
+.ctrl-name-sm{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+.main-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.main-tabs{display:flex;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;}
+.main-tab{padding:10px 18px;font-size:13px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:all .15s;background:none;border-top:none;border-left:none;border-right:none;font-family:var(--sans);}
+.main-tab:hover{color:var(--text);}
+.main-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+.detail-wrap{flex:1;overflow-y:auto;padding:26px;}
+.detail-wrap::-webkit-scrollbar{width:5px;}
+.detail-wrap::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);gap:10px;}
+.ctrl-header{display:flex;align-items:flex-start;gap:12px;margin-bottom:20px;}
+.id-badge{font-family:var(--mono);font-size:12px;background:rgba(88,166,255,.1);color:var(--accent);padding:5px 11px;border-radius:6px;border:1px solid rgba(88,166,255,.25);white-space:nowrap;flex-shrink:0;}
+.ctrl-title{font-size:18px;font-weight:600;flex:1;line-height:1.3;}
+.ctrl-group{font-size:11px;text-transform:uppercase;letter-spacing:.9px;color:var(--muted);margin-top:3px;}
+.sec-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:7px;margin-top:22px;}
+.desc-box{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:13px;font-size:13px;line-height:1.75;color:#c9d1d9;}
+.proc-box{background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:13px;font-size:13px;line-height:1.75;color:#c9d1d9;}
+.status-row{display:flex;gap:7px;flex-wrap:wrap;}
+.s-opt{display:flex;align-items:center;gap:6px;padding:6px 13px;border-radius:7px;border:1px solid var(--border);cursor:pointer;font-size:12px;user-select:none;transition:all .15s;}
+.s-opt:hover{border-color:var(--muted);}
+.s-opt input{display:none;}
+.s-opt.sg{border-color:var(--green);background:rgba(63,185,80,.09);color:var(--green);}
+.s-opt.sy{border-color:var(--yellow);background:rgba(210,153,34,.09);color:var(--yellow);}
+.s-opt.sr{border-color:var(--red);background:rgba(248,81,73,.09);color:var(--red);}
+.s-opt.sm{border-color:var(--muted);background:rgba(125,133,144,.09);color:var(--muted);}
+.s-opt.so{border-color:var(--orange);background:rgba(227,129,59,.09);color:var(--orange);}
+.fl{margin-bottom:14px;}
+.fl-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:5px;display:block;}
+.f-ta{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px;border-radius:6px;font-size:13px;font-family:var(--sans);resize:vertical;min-height:84px;outline:none;transition:border-color .15s;line-height:1.6;}
+.f-ta:focus{border-color:var(--accent);}
+.f-ta::placeholder{color:var(--muted);}
+.f-in{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:6px;font-size:13px;font-family:var(--sans);outline:none;transition:border-color .15s;}
+.f-in:focus{border-color:var(--accent);}
+.f-in::placeholder{color:var(--muted);}
+.f-sel{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:6px;font-size:13px;font-family:var(--sans);outline:none;}
+.row2{display:flex;gap:12px;}
+.row2 .fl{flex:1;}
+.ev-list{display:flex;flex-direction:column;gap:6px;margin-bottom:8px;}
+.ev-item{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;}
+.ev-name{flex:1;}
+.ev-del{background:none;border:none;color:var(--muted);cursor:pointer;padding:1px 5px;border-radius:3px;font-size:13px;transition:color .15s;}
+.ev-del:hover{color:var(--red);}
+.ev-row{display:flex;gap:7px;}
+.ev-row .f-in{flex:1;}
+.save-bar{padding:12px 26px;border-top:1px solid var(--border);background:var(--bg);display:flex;justify-content:flex-end;align-items:center;gap:8px;flex-shrink:0;}
+.saved-msg{font-size:12px;color:var(--green);opacity:0;transition:opacity .3s;margin-right:auto;}
+.saved-msg.show{opacity:1;}
+
+/* ── AI Panel ── */
+.ai-panel{background:var(--bg);border:1px solid var(--border);border-radius:10px;margin-top:20px;overflow:hidden;transition:border-color .2s;}
+.ai-panel.active{border-color:rgba(88,166,255,.4);}
+.ai-panel-header{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface);}
+.ai-panel-title{font-size:13px;font-weight:600;flex:1;}
+.ai-panel-sub{font-size:11px;color:var(--muted);}
+.ai-input-area{padding:14px;}
+.ai-input-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin-bottom:7px;display:block;}
+.ai-textarea{width:100%;background:var(--s2);border:1px solid var(--border);color:var(--text);padding:10px;border-radius:7px;font-size:13px;font-family:var(--sans);resize:vertical;min-height:96px;outline:none;transition:border-color .15s;line-height:1.6;}
+.ai-textarea:focus{border-color:var(--accent);}
+.ai-textarea::placeholder{color:var(--muted);}
+.ai-actions{display:flex;align-items:center;gap:8px;margin-top:10px;}
+.btn-ai{background:linear-gradient(135deg,#1a2a4a,#162032);border:1px solid rgba(88,166,255,.4);color:var(--accent);font-weight:600;}
+.btn-ai:hover{border-color:var(--accent);background:linear-gradient(135deg,#1e3258,#1a2a4a);}
+.btn-ai:disabled{opacity:.5;cursor:not-allowed;}
+.btn-ai .ai-spinner{display:none;width:12px;height:12px;border:2px solid rgba(88,166,255,.3);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
+.btn-ai.loading .ai-spinner{display:inline-block;}
+.btn-ai.loading .ai-btn-text{display:none;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.ai-result{margin-top:0;border-top:1px solid var(--border);display:none;}
+.ai-result.show{display:block;}
+.ai-result-header{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--surface);}
+.ai-verdict{display:flex;align-items:center;gap:7px;font-weight:600;font-size:13px;}
+.ai-verdict-badge{padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;letter-spacing:.5px;}
+.ai-confidence{font-size:11px;color:var(--muted);margin-left:auto;}
+.ai-body{padding:14px;display:flex;flex-direction:column;gap:12px;}
+.ai-section-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin-bottom:5px;}
+.ai-text{font-size:13px;line-height:1.7;color:#c9d1d9;}
+.ai-apply-row{display:flex;gap:8px;flex-wrap:wrap;padding:12px 14px;border-top:1px solid var(--border);background:var(--surface);align-items:center;}
+.ai-apply-lbl{font-size:12px;color:var(--muted);margin-right:4px;}
+.btn-apply{font-size:12px;padding:5px 12px;}
+.btn-apply-all{background:rgba(88,166,255,.12);border-color:rgba(88,166,255,.4);color:var(--accent);font-size:12px;padding:5px 12px;}
+.btn-apply-all:hover{background:rgba(88,166,255,.2);}
+.ai-no-key{padding:14px;font-size:12px;color:var(--yellow);display:flex;align-items:center;gap:8px;}
+.ai-no-key a{color:var(--accent);cursor:pointer;text-decoration:underline;}
+
+/* Dashboard */
+.dash-inner{padding:24px;overflow-y:auto;flex:1;}
+.dash-inner::-webkit-scrollbar{width:5px;}
+.dash-inner::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.stat-grid{display:grid;gap:10px;margin-bottom:20px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:14px;text-align:center;}
+.stat-num{font-size:26px;font-weight:700;font-family:var(--mono);line-height:1.1;margin-bottom:4px;}
+.stat-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;line-height:1.3;}
+.prog-card{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:18px;margin-bottom:18px;}
+.prog-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.prog-lbl{font-size:13px;font-weight:500;}
+.prog-pct{font-family:var(--mono);font-size:17px;font-weight:700;}
+.prog-track{height:7px;background:var(--bg);border-radius:99px;overflow:hidden;display:flex;gap:2px;}
+.prog-seg{height:100%;border-radius:99px;transition:width .4s;}
+.prog-legend{display:flex;gap:14px;margin-top:9px;flex-wrap:wrap;}
+.leg{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);}
+.leg-dot{width:6px;height:6px;border-radius:50%;}
+.group-summary-card{background:var(--surface);border:1px solid var(--border);border-radius:9px;overflow:hidden;margin-bottom:18px;}
+.gs-title{padding:12px 16px;font-size:13px;font-weight:500;border-bottom:1px solid var(--border);}
+.gs-row{display:grid;gap:8px;padding:8px 16px;border-bottom:1px solid rgba(48,54,61,.4);align-items:center;font-size:12px;}
+.gs-row:last-child{border-bottom:none;}
+.gs-row.hdr{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;background:var(--bg);padding:6px 16px;}
+.mini-bar{height:3px;background:var(--bg);border-radius:99px;overflow:hidden;display:flex;}
+.mini-seg{height:100%;}
+.meta-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
+.meta-grid .fl{margin-bottom:0;}
+
+/* Export */
+.exp-inner{overflow-y:auto;flex:1;padding:24px;max-width:740px;margin:0 auto;width:100%;}
+.exp-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:14px;}
+.exp-title{font-size:14px;font-weight:600;margin-bottom:5px;display:flex;align-items:center;gap:8px;}
+.exp-desc{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px;}
+.info-row{font-size:12px;color:var(--muted);line-height:1.7;}
+.info-row code{font-family:var(--mono);font-size:11px;color:var(--accent);word-break:break-all;}
+
+/* Settings */
+.settings-inner{overflow-y:auto;flex:1;padding:24px;max-width:680px;margin:0 auto;width:100%;}
+.settings-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px;}
+.settings-title{font-size:15px;font-weight:600;margin-bottom:6px;}
+.settings-desc{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:18px;}
+.api-key-row{display:flex;gap:8px;align-items:center;}
+.api-key-input{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:7px;font-size:13px;font-family:var(--mono);outline:none;transition:border-color .15s;letter-spacing:.5px;}
+.api-key-input:focus{border-color:var(--accent);}
+.api-key-input::placeholder{color:var(--muted);font-family:var(--sans);letter-spacing:0;}
+.key-status{font-size:12px;margin-top:8px;display:flex;align-items:center;gap:6px;}
+.key-status.ok{color:var(--green);}
+.key-status.missing{color:var(--muted);}
+.key-status.err{color:var(--red);}
+.pricing-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px;}
+.pricing-table th{text-align:left;color:var(--muted);font-weight:600;padding:5px 8px;border-bottom:1px solid var(--border);}
+.pricing-table td{padding:6px 8px;border-bottom:1px solid rgba(48,54,61,.4);color:#c9d1d9;}
+.pricing-table tr:last-child td{border-bottom:none;}
+
+.toast{position:fixed;bottom:18px;right:18px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:10px 15px;font-size:13px;transform:translateY(60px);opacity:0;transition:all .2s;z-index:999;max-width:320px;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.ok{border-color:var(--green);}
+.toast.err{border-color:var(--red);}
+.hidden{display:none!important;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">GRC<span> // </span>PLATFORM</div>
+  <div class="header-mid">
+    <div class="active-badge hidden" id="active-badge" onclick="backToPicker()">
+      <div class="ab-dot" id="ab-dot"></div>
+      <span class="ab-name" id="ab-name"></span>
+      <span class="ab-change">↩ change</span>
+    </div>
+  </div>
+  <div class="hdr-right" id="hdr-actions" style="display:none">
+    <button class="btn" onclick="doImport()">↑ Import</button>
+    <button class="btn" onclick="doExportJSON()">↓ Backup</button>
+    <button class="btn btn-primary" onclick="switchTab('export')">▶ Export</button>
+  </div>
+  <button class="btn btn-settings" onclick="openSettings()" title="Settings — API Key &amp; Preferences" style="margin-left:8px">⚙ Settings</button>
+</header>
+
+<div class="app-body">
+
+<!-- ══ PICKER ══ -->
+<div id="picker-screen">
+  <div class="picker-inner">
+    <div class="picker-title">GRC Assessment Platform</div>
+    <div class="picker-sub">Select a compliance standard to begin or continue your assessment. All data is stored locally in a SQLite database on this machine.</div>
+    <div class="standards-grid" id="standards-grid"></div>
+    <div class="picker-actions">
+      <button class="btn btn-primary" id="launch-btn" onclick="launchStandard()" style="padding:9px 24px;font-size:13px;opacity:.4;cursor:not-allowed">Begin Assessment →</button>
+      <span id="picker-hint" style="font-size:12px;color:var(--muted)">Select a standard above to continue</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MAIN APP ══ -->
+<div id="main-app">
+  <div class="sidebar">
+    <div class="sidebar-top">
+      <input class="s-input" id="ctrl-search" placeholder="🔍 Search controls..." oninput="filterList()">
+      <div class="filter-row" id="filter-row"></div>
+    </div>
+    <div class="ctrl-list" id="ctrl-list"></div>
+  </div>
+  <div class="main-panel">
+    <div class="main-tabs">
+      <button class="main-tab active" onclick="switchTab('assessment')">Controls</button>
+      <button class="main-tab" onclick="switchTab('dashboard')">Dashboard</button>
+      <button class="main-tab" onclick="switchTab('export')">Export</button>
+    </div>
+
+    <!-- Assessment -->
+    <div id="tab-assessment" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+      <div class="empty-state" id="empty-state">
+        <svg width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        <div style="font-size:14px;font-weight:500">Select a control to begin</div>
+        <div style="font-size:12px;color:var(--muted)">Choose from the list on the left</div>
+      </div>
+      <div id="detail-panel" class="hidden" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+        <div class="detail-wrap" id="detail-content"></div>
+        <div class="save-bar">
+          <div class="saved-msg" id="saved-msg">✓ Saved to database</div>
+          <button class="btn btn-danger" onclick="clearCtrl()">Clear</button>
+          <button class="btn btn-primary" onclick="saveCtrl()">Save &amp; Next ↵</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="tab-dashboard" class="hidden" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+      <div class="dash-inner">
+        <div style="font-size:18px;font-weight:600;margin-bottom:3px" id="dash-title">Dashboard</div>
+        <div style="color:var(--muted);font-size:12px;margin-bottom:22px" id="dash-sub"></div>
+        <div class="meta-grid">
+          <div class="fl"><label class="fl-lbl">Organization</label><input class="f-in" id="m-org" placeholder="Organization name" oninput="saveMeta('org',this.value)"></div>
+          <div class="fl"><label class="fl-lbl">Lead Assessor</label><input class="f-in" id="m-assessor" placeholder="Assessor name" oninput="saveMeta('assessor',this.value)"></div>
+          <div class="fl"><label class="fl-lbl">Assessment Date</label><input class="f-in" id="m-date" type="date" oninput="saveMeta('date',this.value)"></div>
+          <div class="fl"><label class="fl-lbl" id="scope-lbl">Scope</label><input class="f-in" id="m-scope" placeholder="Assessment scope" oninput="saveMeta('scope',this.value)"></div>
+        </div>
+        <div class="stat-grid" id="stat-grid"></div>
+        <div class="prog-card">
+          <div class="prog-head"><div class="prog-lbl">Assessment Progress</div><div class="prog-pct" id="prog-pct" style="color:var(--accent)">0%</div></div>
+          <div class="prog-track" id="prog-track"></div>
+          <div class="prog-legend" id="prog-legend"></div>
+        </div>
+        <div class="group-summary-card">
+          <div class="gs-title" id="gs-title">Control Group Summary</div>
+          <div id="gs-hdr" class="gs-row hdr"></div>
+          <div id="gs-rows"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Export -->
+    <div id="tab-export" class="hidden" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+      <div class="exp-inner">
+        <div style="font-size:18px;font-weight:600;margin-bottom:3px">Export Report</div>
+        <div style="color:var(--muted);font-size:12px;margin-bottom:22px" id="exp-std-name"></div>
+        <div class="exp-card">
+          <div class="exp-title">📊 Excel Workbook (.xlsx)</div>
+          <div class="exp-desc">Four-sheet workbook: Summary, All Controls, Findings, Evidence Log. Opens a Save dialog so you can choose the destination.</div>
+          <button class="btn btn-success" onclick="doExportExcel()">↓ Export to Excel</button>
+        </div>
+        <div class="exp-card">
+          <div class="exp-title">💾 JSON Backup</div>
+          <div class="exp-desc">Full portable backup of assessment data for this standard. Use to transfer to another machine or archive completed assessments.</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="doExportJSON()">↓ Download Backup</button>
+            <button class="btn" onclick="doImport()">↑ Restore from Backup</button>
+          </div>
+        </div>
+        <div class="exp-card">
+          <div class="exp-title" style="color:var(--red)">⚠ Reset This Assessment</div>
+          <div class="exp-desc" style="color:rgba(248,81,73,.75)">Clears all data for the active standard only. Other standards and their data are not affected.</div>
+          <button class="btn btn-danger" onclick="confirmReset()">Clear Assessment Data</button>
+        </div>
+        <div class="exp-card">
+          <div class="exp-title" style="font-size:13px;font-weight:400;color:var(--muted)">ℹ Database Location</div>
+          <div class="info-row">All data stored in a local SQLite database:<br><code id="db-path-lbl" style="margin-top:6px;display:block"></code></div>
+          <button class="btn" style="margin-top:12px" onclick="openDBFolder()">Open Folder</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <div id="tab-settings" class="hidden" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+      <div class="settings-inner">
+        <div style="font-size:18px;font-weight:600;margin-bottom:3px">Settings</div>
+        <div style="color:var(--muted);font-size:12px;margin-bottom:24px">Configure your API key and application preferences</div>
+
+        <div class="settings-card">
+          <div class="settings-title">✦ Anthropic API Key</div>
+          <div class="settings-desc">
+            Required for the AI Control Assessment feature. Your key is encrypted and stored locally using your operating system's secure credential store — it never leaves your machine except when making assessment requests to Anthropic's API.<br><br>
+            Get a key at <strong>console.anthropic.com</strong> → API Keys. New accounts receive $5 free credit.
+          </div>
+          <div class="api-key-row">
+            <input class="api-key-input" id="api-key-input" type="password" placeholder="sk-ant-api03-..." autocomplete="off" spellcheck="false">
+            <button class="btn" onclick="toggleKeyVisibility()" id="key-vis-btn" title="Show/Hide">👁</button>
+            <button class="btn btn-primary" onclick="saveApiKey()">Save Key</button>
+          </div>
+          <div class="key-status missing" id="key-status">○ No API key saved</div>
+        </div>
+
+        <div class="settings-card">
+          <div class="settings-title">💰 API Cost Reference</div>
+          <div class="settings-desc">Each "✦ AI Assess" click sends ~700–1,300 tokens. Pricing for Claude Sonnet (used for assessments):</div>
+          <table class="pricing-table">
+            <thead><tr><th>Standard</th><th>Controls</th><th>Est. cost (all AI-assessed)</th></tr></thead>
+            <tbody>
+              <tr><td>HIPAA Security Rule</td><td>54</td><td>~$0.20</td></tr>
+              <tr><td>SOC 2</td><td>64</td><td>~$0.25</td></tr>
+              <tr><td>ISO 27001:2022</td><td>93</td><td>~$0.35</td></tr>
+              <tr><td>NIST CSF 2.0</td><td>106</td><td>~$0.40</td></tr>
+              <tr><td>PCI DSS v4.0</td><td>286</td><td>~$1.10</td></tr>
+              <tr><td>FedRAMP Moderate</td><td>325</td><td>~$1.20</td></tr>
+            </tbody>
+          </table>
+          <div style="font-size:11px;color:var(--muted);margin-top:10px">Realistically you'd use AI Assess on a fraction of controls — actual spend is much lower.</div>
+        </div>
+
+        <div class="settings-card">
+          <div class="settings-title">🗄 Database</div>
+          <div class="settings-desc">All assessment data is stored in a local SQLite database file. You can back it up, move it, or open it with any SQLite viewer.</div>
+          <div class="info-row">Location:<br><code id="settings-db-path" style="margin-top:6px;display:block"></code></div>
+          <div style="display:flex;gap:8px;margin-top:14px">
+            <button class="btn" onclick="openDBFolder()">Open Folder</button>
+          </div>
+        </div>
+
+        <div class="settings-card">
+          <div class="settings-title">ℹ About</div>
+          <div class="info-row">
+            <strong>GRC Assessment Platform</strong><br>
+            Version: <span id="app-version">—</span><br>
+            Multi-standard compliance assessment tool supporting ISO 27001:2022, FedRAMP Moderate, SOC 2, NIST CSF 2.0, PCI DSS v4.0, and HIPAA Security Rule.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="../controls-data.js"></script>
+<script>
+'use strict';
+
+// ════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════
+let activeStd    = null;
+let assessData   = {};
+let metaData     = {};
+let selectedId   = null;
+let activeFilter = 'all';
+let searchQ      = '';
+let pickerSel    = null;
+let apiKey       = '';
+let aiResult     = null;
+let appInfo      = {};
+
+// ════════════════════════════════════════════════════════
+//  BOOT
+// ════════════════════════════════════════════════════════
+async function boot() {
+  appInfo = await window.api.appInfo();
+  apiKey  = await window.api.getApiKey();
+
+  // Populate settings UI
+  const kInput = document.getElementById('api-key-input');
+  if (kInput && apiKey) kInput.value = apiKey;
+  updateKeyStatus();
+
+  const vEl = document.getElementById('app-version');
+  if (vEl) vEl.textContent = appInfo.version || '1.0.0';
+
+  const dbPathEls = ['db-path-lbl','settings-db-path'];
+  dbPathEls.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = appInfo.dbPath || '';
+  });
+
+  buildPicker();
+}
+
+// ════════════════════════════════════════════════════════
+//  SETTINGS
+// ════════════════════════════════════════════════════════
+function openSettings() {
+  document.getElementById('picker-screen').style.display = 'none';
+  document.getElementById('main-app').style.display = 'flex';
+  document.getElementById('active-badge').classList.add('hidden');
+  document.getElementById('hdr-actions').style.display = 'none';
+  // show settings tab
+  document.querySelectorAll('[id^=tab-]').forEach(t=>t.classList.add('hidden'));
+  document.getElementById('tab-settings').classList.remove('hidden');
+  document.querySelectorAll('.main-tab').forEach(t=>t.classList.remove('active'));
+}
+
+async function saveApiKey() {
+  const val = (document.getElementById('api-key-input').value || '').trim();
+  if (!val) { toast('Enter an API key first.','err'); return; }
+  const r = await window.api.setApiKey(val);
+  if (r.ok) { apiKey = val; updateKeyStatus(); toast('API key saved securely.','ok'); }
+  else toast('Failed to save key: '+(r.error||'unknown'),'err');
+}
+
+function toggleKeyVisibility() {
+  const inp = document.getElementById('api-key-input');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+function updateKeyStatus() {
+  const el = document.getElementById('key-status');
+  if (!el) return;
+  if (apiKey) {
+    el.className = 'key-status ok';
+    el.textContent = '✓ API key saved — AI assessment enabled';
+  } else {
+    el.className = 'key-status missing';
+    el.textContent = '○ No API key saved — AI assessment disabled';
+  }
+}
+
+async function openDBFolder() {
+  if (appInfo.dbPath) await window.api.showInFolder(appInfo.dbPath);
+}
+
+// ════════════════════════════════════════════════════════
+//  PICKER
+// ════════════════════════════════════════════════════════
+async function buildPicker() {
+  const grid = document.getElementById('standards-grid');
+  grid.innerHTML = '';
+
+  for (const std of Object.values(STANDARDS)) {
+    const data  = await window.api.getAll(std.id);
+    const stats = calcStats(std, data);
+    const pct   = Math.round((stats.tested / std.controls.length) * 100);
+    const fills = Object.values(stats.counts).map((n,i) => {
+      const w = ((n/std.controls.length)*100).toFixed(1);
+      return `<div class="mini-seg" style="width:${w}%;background:${std.statColors[i]}"></div>`;
+    }).join('');
+
+    grid.innerHTML += `
+      <div class="std-card ${std.cardClass}" id="sc-${std.id}" onclick="selectStandard('${std.id}')">
+        <div class="std-checkmark">✓</div>
+        <div class="std-dot"></div>
+        <div class="std-id">${std.id.toUpperCase()}</div>
+        <div class="std-name">${std.label}</div>
+        <div class="std-desc">${std.desc}</div>
+        <div class="std-meta">${std.pills.map(p=>`<span class="std-pill">${p}</span>`).join('')}</div>
+        <div class="std-progress">
+          <div class="std-prog-bar"><div class="mini-bar">${fills}</div></div>
+          <div class="std-prog-label"><span>${stats.tested} / ${std.controls.length} assessed</span><span>${pct}%</span></div>
+        </div>
+      </div>`;
+  }
+}
+
+function selectStandard(id) {
+  pickerSel = id;
+  document.querySelectorAll('.std-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('sc-'+id).classList.add('selected');
+  const btn = document.getElementById('launch-btn');
+  btn.style.opacity='1'; btn.style.cursor='pointer';
+  document.getElementById('picker-hint').textContent = 'Selected: '+STANDARDS[id].label;
+}
+
+async function launchStandard() {
+  if (!pickerSel) return;
+  activeStd  = STANDARDS[pickerSel];
+  assessData = await window.api.getAll(activeStd.id);
+  metaData   = await window.api.getMeta(activeStd.id);
+
+  document.getElementById('ab-dot').style.background = activeStd.color;
+  document.getElementById('ab-name').textContent = activeStd.label;
+  document.getElementById('active-badge').classList.remove('hidden');
+  document.getElementById('hdr-actions').style.display = 'flex';
+  document.getElementById('exp-std-name').textContent = activeStd.fullName;
+
+  document.getElementById('picker-screen').style.display = 'none';
+  document.getElementById('main-app').style.display = 'flex';
+
+  selectedId = null; activeFilter = 'all'; searchQ = ''; aiResult = null;
+  buildFilterChips();
+  renderList();
+  buildDashboard();
+  switchTab('assessment');
+}
+
+async function backToPicker() {
+  document.getElementById('picker-screen').style.display = 'flex';
+  document.getElementById('main-app').style.display = 'none';
+  document.getElementById('active-badge').classList.add('hidden');
+  document.getElementById('hdr-actions').style.display = 'none';
+  await buildPicker();
+}
+
+// ════════════════════════════════════════════════════════
+//  STATS
+// ════════════════════════════════════════════════════════
+function calcStats(std, data) {
+  const counts = {};
+  std.statusOptions.forEach(o => { counts[o.val] = 0; });
+  Object.values(data).forEach(d => { if (d.status && counts[d.status] !== undefined) counts[d.status]++; });
+  const tested = Object.values(counts).reduce((a,b)=>a+b,0);
+  return { counts, tested };
+}
+
+// ════════════════════════════════════════════════════════
+//  TABS
+// ════════════════════════════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.main-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('[id^=tab-]').forEach(t=>t.classList.add('hidden'));
+  document.getElementById('tab-'+name).classList.remove('hidden');
+  document.querySelectorAll('.main-tab').forEach(t=>{
+    if(t.textContent.trim().toLowerCase().includes(name==='assessment'?'control':name)) t.classList.add('active');
+  });
+  if (name==='dashboard') { populateDashMeta(); updateDashStats(); }
+}
+
+// ════════════════════════════════════════════════════════
+//  SIDEBAR
+// ════════════════════════════════════════════════════════
+function buildFilterChips() {
+  document.getElementById('filter-row').innerHTML = activeStd.filterChips.map(c =>
+    `<button class="chip ${c.cls||''} ${c.val==='all'?'active':''}" onclick="setFilter('${c.val}',this)">${c.label}</button>`
+  ).join('');
+}
+
+function setFilter(f,el) {
+  activeFilter=f;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderList();
+}
+
+function filterList() { searchQ=document.getElementById('ctrl-search').value.toLowerCase(); renderList(); }
+
+function getFiltered() {
+  return activeStd.controls.filter(c => {
+    const d = assessData[c.id];
+    const s = d?(d.status||'none'):'none';
+    if (activeFilter!=='all' && s!==activeFilter) return false;
+    if (searchQ) return c.id.toLowerCase().includes(searchQ)||c.name.toLowerCase().includes(searchQ);
+    return true;
+  });
+}
+
+function renderList() {
+  const filtered = getFiltered();
+  const byGroup  = {};
+  filtered.forEach(c => { const g=activeStd.getGroup(c); if(!byGroup[g]) byGroup[g]=[]; byGroup[g].push(c); });
+  let html = '';
+  Object.entries(byGroup).forEach(([g,ctrls]) => {
+    html += `<div class="group-label">${g} — ${activeStd.groups[g]||g}</div>`;
+    ctrls.forEach(c => {
+      const d = assessData[c.id];
+      const s = d?(d.status||'none'):'none';
+      html += `<div class="ctrl-item ${selectedId===c.id?'sel':''}" onclick="selectCtrl('${c.id}')">
+        <div class="dot ${s}"></div>
+        <div class="ctrl-id-sm">${c.id}</div>
+        <div class="ctrl-name-sm">${c.name}</div>
+      </div>`;
+    });
+  });
+  if (!html) html = `<div style="padding:20px;text-align:center;color:var(--muted);font-size:12px;">No controls match.</div>`;
+  document.getElementById('ctrl-list').innerHTML = html;
+}
+
+// ════════════════════════════════════════════════════════
+//  CONTROL DETAIL
+// ════════════════════════════════════════════════════════
+function selectCtrl(id) {
+  selectedId = id;
+  aiResult   = null;
+  renderList();
+  const ctrl = activeStd.controls.find(c=>c.id===id);
+  if (!ctrl) return;
+  const d = assessData[id]||{};
+
+  document.getElementById('empty-state').classList.add('hidden');
+  document.getElementById('detail-panel').classList.remove('hidden');
+
+  const groupName = activeStd.groups[activeStd.getGroup(ctrl)]||activeStd.getGroup(ctrl);
+  const statusOpts = activeStd.statusOptions.map(o =>
+    `<label class="s-opt ${d.status===o.val?o.cls:''}" id="so-${o.val}">
+      <input type="radio" name="ctrl-status" value="${o.val}" ${d.status===o.val?'checked':''} onchange="onStatusChange('${o.val}')">
+      ${o.label}
+    </label>`
+  ).join('');
+
+  const evHtml = (d.evidence||[]).map((ev,i) =>
+    `<div class="ev-item"><span style="color:var(--accent)">📄</span><span class="ev-name">${esc(ev)}</span><button class="ev-del" onclick="removeEv(${i})">✕</button></div>`
+  ).join('');
+
+  const aiBlock = apiKey
+    ? `<div class="ai-input-area">
+        <label class="ai-input-label">What did you test / find?</label>
+        <textarea class="ai-textarea" id="ai-input" placeholder="Describe what you examined, tested, or observed — e.g. reviewed policy dated 2024-01, tested 10 accounts, found 2 service accounts without MFA...">${esc(d.aiInput||'')}</textarea>
+        <div class="ai-actions">
+          <button class="btn btn-ai" id="ai-assess-btn" onclick="runAIAssessment()">
+            <div class="ai-spinner"></div>
+            <span class="ai-btn-text">✦ AI Assess</span>
+          </button>
+          <span style="font-size:11px;color:var(--muted)">AI reads the control + your notes and recommends a verdict</span>
+        </div>
+      </div>`
+    : `<div class="ai-no-key">⚠ No API key configured — <a onclick="openSettings()">add your Anthropic API key in Settings</a> to enable AI assessment.</div>`;
+
+  document.getElementById('detail-content').innerHTML = `
+    <div class="ctrl-header">
+      <div class="id-badge">${ctrl.id}</div>
+      <div style="flex:1">
+        <div class="ctrl-title">${ctrl.name}</div>
+        <div class="ctrl-group">${activeStd.groupLabel}: ${groupName}</div>
+      </div>
+    </div>
+    <div class="sec-lbl">Control / Requirement</div>
+    <div class="desc-box">${ctrl.desc}</div>
+    <div class="sec-lbl">Assessment Procedures</div>
+    <div class="proc-box">${ctrl.proc}</div>
+    <div class="sec-lbl" style="margin-top:20px">Assessment Result</div>
+    <div class="status-row">${statusOpts}</div>
+    <div class="fl" style="margin-top:14px">
+      <label class="fl-lbl">Assessment Notes / Evidence Reviewed</label>
+      <textarea class="f-ta" id="f-notes" placeholder="Document what was examined, tested, or observed...">${esc(d.notes||'')}</textarea>
+    </div>
+    <div class="fl">
+      <label class="fl-lbl">Finding / Gap Description</label>
+      <textarea class="f-ta" id="f-finding" placeholder="Describe any gap, weakness, or nonconformity found...">${esc(d.finding||'')}</textarea>
+    </div>
+    <div class="row2">
+      <div class="fl">
+        <label class="fl-lbl">Recommendation</label>
+        <textarea class="f-ta" style="min-height:72px" id="f-rec" placeholder="Corrective action or improvement recommended...">${esc(d.recommendation||'')}</textarea>
+      </div>
+      <div class="fl">
+        <label class="fl-lbl">Risk Rating</label>
+        <select class="f-sel" id="f-risk" style="margin-bottom:10px">
+          <option value="">— Select —</option>
+          <option value="high" ${d.risk==='high'?'selected':''}>High</option>
+          <option value="moderate" ${d.risk==='moderate'?'selected':''}>Moderate</option>
+          <option value="low" ${d.risk==='low'?'selected':''}>Low</option>
+        </select>
+        <label class="fl-lbl">Target Remediation Date</label>
+        <input class="f-in" type="date" id="f-remdate" value="${d.remdate||''}">
+      </div>
+    </div>
+    <div class="fl">
+      <label class="fl-lbl">Evidence / Artifacts</label>
+      <div class="ev-list" id="ev-list">${evHtml}</div>
+      <div class="ev-row">
+        <input class="f-in" id="ev-input" placeholder="Document name, screenshot, system reference...">
+        <button class="btn" onclick="addEv()">+ Add</button>
+      </div>
+    </div>
+    <div class="fl">
+      <label class="fl-lbl">Assessor Initials</label>
+      <input class="f-in" id="f-assessor" placeholder="e.g. JS" value="${esc(d.assessor||(metaData.assessor?(metaData.assessor.split(' ').map(w=>w[0]).join('')):''))}">
+    </div>
+
+    <div class="ai-panel" id="ai-panel">
+      <div class="ai-panel-header">
+        <span style="font-size:16px">✦</span>
+        <div style="flex:1">
+          <div class="ai-panel-title">AI Control Assessment</div>
+          <div class="ai-panel-sub">Let Claude evaluate your testing notes and recommend a verdict</div>
+        </div>
+      </div>
+      ${aiBlock}
+      <div class="ai-result" id="ai-result">
+        <div class="ai-result-header">
+          <div class="ai-verdict">AI Recommendation: <span class="ai-verdict-badge" id="ai-verdict-badge"></span></div>
+          <span class="ai-confidence" id="ai-confidence-lbl"></span>
+        </div>
+        <div class="ai-body">
+          <div><div class="ai-section-lbl">Rationale</div><div class="ai-text" id="ai-rationale"></div></div>
+          <div><div class="ai-section-lbl">Suggested Finding</div><div class="ai-text" id="ai-finding-text"></div></div>
+          <div><div class="ai-section-lbl">Suggested Recommendation</div><div class="ai-text" id="ai-rec-text"></div></div>
+          <div><div class="ai-section-lbl">Suggested Risk Rating</div><div class="ai-text" id="ai-risk-text"></div></div>
+        </div>
+        <div class="ai-apply-row">
+          <span class="ai-apply-lbl">Apply:</span>
+          <button class="btn btn-apply" onclick="applyAIStatus()">Status</button>
+          <button class="btn btn-apply" onclick="applyAIFinding()">Finding</button>
+          <button class="btn btn-apply" onclick="applyAIRec()">Recommendation</button>
+          <button class="btn btn-apply" onclick="applyAIRisk()">Risk Rating</button>
+          <button class="btn btn-apply-all btn" onclick="applyAIAll()">✦ Apply All</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('detail-content').closest('.detail-wrap').scrollTo(0,0);
+}
+
+function onStatusChange(val) {
+  activeStd.statusOptions.forEach(o => {
+    const el = document.getElementById('so-'+o.val);
+    if (el) el.className = 's-opt'+(o.val===val?' '+o.cls:'');
+  });
+}
+
+function addEv() {
+  const inp = document.getElementById('ev-input');
+  if (!inp||!inp.value.trim()) return;
+  if (!assessData[selectedId]) assessData[selectedId]={evidence:[]};
+  if (!assessData[selectedId].evidence) assessData[selectedId].evidence=[];
+  assessData[selectedId].evidence.push(inp.value.trim());
+  inp.value='';
+  selectCtrl(selectedId);
+}
+
+function removeEv(idx) {
+  if (assessData[selectedId]?.evidence) {
+    assessData[selectedId].evidence.splice(idx,1);
+    selectCtrl(selectedId);
+  }
+}
+
+function gatherForm() {
+  const status = document.querySelector('input[name="ctrl-status"]:checked');
+  return {
+    status: status?status.value:'',
+    notes: document.getElementById('f-notes')?.value||'',
+    finding: document.getElementById('f-finding')?.value||'',
+    recommendation: document.getElementById('f-rec')?.value||'',
+    risk: document.getElementById('f-risk')?.value||'',
+    remdate: document.getElementById('f-remdate')?.value||'',
+    assessor: document.getElementById('f-assessor')?.value||'',
+    aiInput: document.getElementById('ai-input')?.value||'',
+    evidence: assessData[selectedId]?.evidence||[]
+  };
+}
+
+async function saveCtrl() {
+  if (!selectedId) return;
+  const data = gatherForm();
+  await window.api.save(activeStd.id, selectedId, data);
+  assessData[selectedId] = data;
+  renderList();
+  const msg = document.getElementById('saved-msg');
+  msg.classList.add('show');
+  setTimeout(()=>msg.classList.remove('show'),2000);
+  toast(selectedId+' saved.','ok');
+  const filtered = getFiltered();
+  const idx = filtered.findIndex(c=>c.id===selectedId);
+  if (idx<filtered.length-1) selectCtrl(filtered[idx+1].id);
+}
+
+async function clearCtrl() {
+  if (!selectedId||!confirm('Clear all data for '+selectedId+'?')) return;
+  await window.api.clear(activeStd.id, selectedId);
+  delete assessData[selectedId];
+  selectCtrl(selectedId);
+  renderList();
+}
+
+// ════════════════════════════════════════════════════════
+//  DASHBOARD
+// ════════════════════════════════════════════════════════
+function buildDashboard() {
+  document.getElementById('dash-title').textContent = activeStd.label+' Dashboard';
+  document.getElementById('dash-sub').textContent   = activeStd.fullName;
+  document.getElementById('scope-lbl').textContent  = activeStd.scopeLabel||'Scope';
+  populateDashMeta();
+  updateDashStats();
+}
+
+function populateDashMeta() {
+  document.getElementById('m-org').value      = metaData.org      || '';
+  document.getElementById('m-assessor').value = metaData.assessor || '';
+  document.getElementById('m-date').value     = metaData.date     || '';
+  document.getElementById('m-scope').value    = metaData.scope    || '';
+}
+
+async function saveMeta(key, val) {
+  metaData[key] = val;
+  await window.api.setMeta(activeStd.id, key, val);
+}
+
+function updateDashStats() {
+  if (!activeStd) return;
+  const stats = calcStats(activeStd, assessData);
+  const total = activeStd.controls.length;
+  const pct   = Math.round((stats.tested/total)*100);
+
+  const cols = Math.min(Object.keys(stats.counts).length+2, 7);
+  document.getElementById('stat-grid').style.gridTemplateColumns = `repeat(${cols},1fr)`;
+  let statHtml = `<div class="stat-card"><div class="stat-num" style="color:var(--text)">${total}</div><div class="stat-lbl">Total</div></div>`;
+  activeStd.statusOptions.forEach((o,i) => {
+    statHtml += `<div class="stat-card"><div class="stat-num" style="color:${activeStd.statColors[i]}">${stats.counts[o.val]||0}</div><div class="stat-lbl">${activeStd.statLabels[i]}</div></div>`;
+  });
+  statHtml += `<div class="stat-card"><div class="stat-num" style="color:#444c56">${total-stats.tested}</div><div class="stat-lbl">Not Tested</div></div>`;
+  document.getElementById('stat-grid').innerHTML = statHtml;
+
+  document.getElementById('prog-pct').textContent = pct+'%';
+  document.getElementById('prog-pct').style.color = activeStd.color;
+  document.getElementById('prog-track').innerHTML = activeStd.statusOptions.map((o,i) =>
+    `<div class="prog-seg" style="background:${activeStd.statColors[i]};width:${((stats.counts[o.val]||0)/total*100).toFixed(1)}%"></div>`
+  ).join('');
+  document.getElementById('prog-legend').innerHTML =
+    activeStd.statusOptions.map((o,i)=>`<div class="leg"><div class="leg-dot" style="background:${activeStd.statColors[i]}"></div>${activeStd.statLabels[i]}</div>`).join('')+
+    `<div class="leg"><div class="leg-dot" style="background:var(--border)"></div>Not Tested</div>`;
+
+  document.getElementById('gs-title').textContent = activeStd.groupLabel+' Summary';
+  const colW = `80px 1fr ${activeStd.statusOptions.map(()=>'52px').join(' ')} 60px`;
+  document.getElementById('gs-hdr').style.gridTemplateColumns = colW;
+  document.getElementById('gs-hdr').innerHTML = `<div>${activeStd.groupLabel}</div><div>Progress</div>${activeStd.statLabels.map(l=>`<div style="text-align:center">${l.split('/')[0].slice(0,8)}</div>`).join('')}<div style="text-align:center">Total</div>`;
+
+  const gs = {};
+  activeStd.controls.forEach(c => {
+    const g = activeStd.getGroup(c);
+    if (!gs[g]) { gs[g]={name:activeStd.groups[g]||g,total:0}; activeStd.statusOptions.forEach(o=>{gs[g][o.val]=0;}); }
+    gs[g].total++;
+    const d = assessData[c.id];
+    if (d?.status && gs[g][d.status]!==undefined) gs[g][d.status]++;
+  });
+
+  document.getElementById('gs-rows').innerHTML = Object.entries(gs).map(([g,f]) => {
+    const fills = activeStd.statusOptions.map((o,i)=>`<div class="mini-seg" style="width:${(f[o.val]||0)/f.total*100}%;background:${activeStd.statColors[i]}"></div>`).join('');
+    const cnts  = activeStd.statusOptions.map((o,i)=>`<div style="text-align:center;color:${activeStd.statColors[i]};font-size:12px">${f[o.val]||0}</div>`).join('');
+    return `<div class="gs-row" style="grid-template-columns:${colW}">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--accent)">${g}</div>
+      <div><div style="font-size:10px;color:var(--muted);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.name}</div><div class="mini-bar">${fills}</div></div>
+      ${cnts}
+      <div style="text-align:center;color:var(--muted);font-size:12px">${f.total}</div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════════
+//  AI ASSESSMENT
+// ════════════════════════════════════════════════════════
+async function runAIAssessment() {
+  const ctrl = activeStd.controls.find(c=>c.id===selectedId);
+  if (!ctrl) return;
+  const userInput = document.getElementById('ai-input')?.value?.trim()||'';
+  if (!userInput) { toast('Describe your findings first.','err'); return; }
+  if (!apiKey)    { toast('Add your API key in Settings first.','err'); return; }
+
+  const btn   = document.getElementById('ai-assess-btn');
+  const panel = document.getElementById('ai-panel');
+  btn.classList.add('loading');
+  btn.disabled = true;
+  panel.classList.add('active');
+  document.getElementById('ai-result').classList.remove('show');
+
+  const statusList = activeStd.statusOptions.map(o =>
+    `  - "${o.val}": ${o.label.replace(/^[✓✗~⚠↔] /,'')}`
+  ).join('\n');
+
+  const prompt = `You are a senior cybersecurity compliance assessor performing a formal ${activeStd.label} assessment.
+
+CONTROL BEING ASSESSED:
+ID: ${ctrl.id}
+Name: ${ctrl.name}
+Standard: ${activeStd.fullName}
+Group: ${activeStd.groups[activeStd.getGroup(ctrl)]||activeStd.getGroup(ctrl)}
+
+CONTROL REQUIREMENT:
+${ctrl.desc}
+
+ASSESSMENT PROCEDURES:
+${ctrl.proc}
+
+ASSESSOR'S TESTING NOTES / EVIDENCE OBSERVED:
+${userInput}
+
+TASK: Based on the assessor's findings above, evaluate whether this control is satisfied.
+
+Respond ONLY with valid JSON (no markdown, no code fences):
+{
+  "status": "<exact status value from list below>",
+  "confidence": "<High|Medium|Low>",
+  "rationale": "<2-4 sentence explanation based on evidence provided>",
+  "finding": "<professional audit finding, 2-3 sentences, referencing specific gaps>",
+  "recommendation": "<specific actionable corrective action, 2-3 sentences>",
+  "risk": "<high|moderate|low>"
+}
+
+Valid status values for ${activeStd.label}:
+${statusList}
+
+Base your assessment ONLY on the evidence described. Return ONLY the JSON object.`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(()=>({error:{message:resp.statusText}}));
+      throw new Error(err?.error?.message || `HTTP ${resp.status}`);
+    }
+
+    const data    = await resp.json();
+    const raw     = data.content?.[0]?.text || '';
+    const cleaned = raw.replace(/^```json\s*/,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
+    const parsed  = JSON.parse(cleaned);
+    aiResult      = parsed;
+    renderAIResult(parsed);
+  } catch(err) {
+    toast('AI assessment failed: '+err.message,'err');
+    panel.classList.remove('active');
+  } finally {
+    btn.classList.remove('loading');
+    btn.disabled = false;
+  }
+}
+
+function renderAIResult(r) {
+  const result = document.getElementById('ai-result');
+  const badge  = document.getElementById('ai-verdict-badge');
+  const opt    = activeStd.statusOptions.find(o=>o.val===r.status);
+  const clsMap = {sg:'var(--green)',sy:'var(--yellow)',sr:'var(--red)',sm:'var(--muted)',so:'var(--orange)'};
+  const col    = opt?(clsMap[opt.cls]||'var(--accent)'):'var(--accent)';
+  const label  = opt?opt.label.replace(/^[✓✗~⚠↔] /,''):r.status;
+  const bgMap  = {'var(--green)':'rgba(63,185,80,.15)','var(--yellow)':'rgba(210,153,34,.15)','var(--red)':'rgba(248,81,73,.15)','var(--muted)':'rgba(125,133,144,.15)','var(--orange)':'rgba(227,129,59,.15)','var(--accent)':'rgba(88,166,255,.15)'};
+  badge.textContent       = label;
+  badge.style.background  = bgMap[col]||'rgba(88,166,255,.15)';
+  badge.style.color       = col;
+  document.getElementById('ai-confidence-lbl').textContent = 'Confidence: '+(r.confidence||'—');
+  document.getElementById('ai-rationale').textContent      = r.rationale||'';
+  document.getElementById('ai-finding-text').textContent   = r.finding||'';
+  document.getElementById('ai-rec-text').textContent       = r.recommendation||'';
+  document.getElementById('ai-risk-text').textContent      = r.risk?(r.risk.charAt(0).toUpperCase()+r.risk.slice(1)):'';
+  result.classList.add('show');
+  result.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function applyAIStatus() {
+  if (!aiResult) return;
+  const radio = document.querySelector(`input[name="ctrl-status"][value="${aiResult.status}"]`);
+  if (radio) { radio.checked=true; onStatusChange(aiResult.status); toast('Status applied.','ok'); }
+  else toast('Status not available for this standard.','err');
+}
+function applyAIFinding()  { if (!aiResult) return; const el=document.getElementById('f-finding'); if(el){el.value=aiResult.finding||''; toast('Finding applied.','ok');} }
+function applyAIRec()      { if (!aiResult) return; const el=document.getElementById('f-rec');     if(el){el.value=aiResult.recommendation||''; toast('Recommendation applied.','ok');} }
+function applyAIRisk()     { if (!aiResult) return; const el=document.getElementById('f-risk');    if(el){el.value=aiResult.risk||''; toast('Risk rating applied.','ok');} }
+function applyAIAll()      { applyAIStatus(); applyAIFinding(); applyAIRec(); applyAIRisk(); toast('All AI recommendations applied.','ok'); }
+
+// ════════════════════════════════════════════════════════
+//  EXPORT
+// ════════════════════════════════════════════════════════
+async function doExportExcel() {
+  const std = activeStd;
+  const controls = std.controls.map(c=>({...c, group: std.getGroup(c)}));
+  const r = await window.api.exportExcel(std.id, metaData, { controls, std });
+  if (r.ok) toast('Excel report saved.','ok');
+  else if (r.error) toast('Export failed: '+r.error,'err');
+}
+
+async function doExportJSON() {
+  const r = await window.api.exportJSON(activeStd.id, activeStd.fullName);
+  if (r.ok) toast('Backup saved.','ok');
+  else if (r.error) toast('Backup failed: '+r.error,'err');
+}
+
+async function doImport() {
+  const r = await window.api.importJSON(activeStd.id);
+  if (r.ok) {
+    assessData = await window.api.getAll(activeStd.id);
+    metaData   = await window.api.getMeta(activeStd.id);
+    populateDashMeta(); updateDashStats(); renderList();
+    toast('Data restored.','ok');
+  } else if (r.error) toast('Import failed: '+r.error,'err');
+}
+
+async function confirmReset() {
+  if (!confirm('Permanently clear ALL assessment data for '+activeStd.label+'?\n\nThis cannot be undone.')) return;
+  await window.api.clearAll(activeStd.id);
+  assessData = {}; metaData = {};
+  selectedId = null;
+  document.getElementById('empty-state').classList.remove('hidden');
+  document.getElementById('detail-panel').classList.add('hidden');
+  populateDashMeta(); updateDashStats(); renderList();
+  toast('Assessment data cleared.','ok');
+}
+
+// ════════════════════════════════════════════════════════
+//  UTILS
+// ════════════════════════════════════════════════════════
+function toast(msg,type) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast '+(type||'');
+  t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3500);
+}
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+document.addEventListener('keydown',e=>{ if(e.ctrlKey&&e.key==='Enter'&&selectedId) saveCtrl(); });
+
+boot();
+</script>
+</body>
+</html>
