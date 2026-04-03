@@ -1,29 +1,25 @@
 {
   "name": "grc-assessment-platform",
   "version": "1.0.0",
-  "description": "GRC Assessment Platform — Multi-standard compliance assessment tool",
+  "description": "GRC Assessment Platform \u2014 Multi-standard compliance assessment tool",
   "main": "src/main.js",
   "author": "GRC Assessment Platform",
   "license": "MIT",
-
   "scripts": {
-    "start":          "electron .",
-    "build":          "electron-builder --win --x64",
-    "build:nsis":     "electron-builder --win nsis --x64",
-    "build:dir":      "electron-builder --win --x64 --dir",
+    "start": "electron .",
+    "build": "electron-builder --win --x64",
+    "build:nsis": "electron-builder --win nsis --x64",
+    "build:dir": "electron-builder --win --x64 --dir",
     "rebuild-native": "electron-rebuild -f -w better-sqlite3"
   },
-
   "build": {
-    "appId":       "com.grc.assessment.platform",
+    "appId": "com.grc.assessment.platform",
     "productName": "GRC Assessment Platform",
-    "copyright":   "Copyright 2025 GRC Assessment Platform",
-
+    "copyright": "Copyright 2025 GRC Assessment Platform",
     "directories": {
-      "output":         "dist",
+      "output": "dist",
       "buildResources": "build"
     },
-
     "files": [
       "src/**/*",
       "assets/**/*",
@@ -32,48 +28,48 @@
       "!**/*.{md,MD}",
       "!**/{test,tests,__tests__,spec,specs}/**/*"
     ],
-
     "asarUnpack": [
       "node_modules/better-sqlite3/**/*"
     ],
-
     "win": {
       "target": [
-        { "target": "nsis", "arch": ["x64"] }
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
-      "icon":             "assets/icon.ico",
-      "artifactName":     "GRC-Assessment-Platform-Setup-${version}.exe"
+      "icon": "assets/icon.ico",
+      "artifactName": "GRC-Assessment-Platform-Setup-${version}.exe"
     },
-
     "nsis": {
-      "oneClick":                           false,
-      "allowElevation":                     false,
+      "oneClick": false,
+      "allowElevation": false,
       "allowToChangeInstallationDirectory": true,
-      "perMachine":                         false,
-      "installerIcon":                      "assets/icon.ico",
-      "uninstallerIcon":                    "assets/icon.ico",
-      "installerHeaderIcon":                "assets/icon.ico",
-      "createDesktopShortcut":              true,
-      "createStartMenuShortcut":            true,
-      "shortcutName":                       "GRC Assessment Platform",
-      "runAfterFinish":                     true,
-      "deleteAppDataOnUninstall":           false,
-      "include":                            "build/installer.nsh"
+      "perMachine": false,
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "installerHeaderIcon": "assets/icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "GRC Assessment Platform",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false,
+      "include": "build/installer.nsh"
     },
-
-    "publish":              null,
-    "compression":          "maximum",
-    "removePackageScripts": true
+    "publish": null,
+    "compression": "maximum",
+    "removePackageScripts": true,
+    "forceCodeSigning": false
   },
-
   "dependencies": {
     "better-sqlite3": "9.4.3",
-    "xlsx":           "0.18.5"
+    "xlsx": "0.18.5"
   },
-
   "devDependencies": {
     "@electron/rebuild": "^3.6.0",
-    "electron":          "28.2.0",
-    "electron-builder":  "24.9.1"
+    "electron": "28.2.0",
+    "electron-builder": "24.9.1"
   }
 }
