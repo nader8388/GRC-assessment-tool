@@ -44,20 +44,8 @@
       "target": [
         { "target": "nsis", "arch": ["x64"] }
       ],
-      "icon":                    "assets/icon.ico",
-      "requestedExecutionLevel": "asInvoker",
-      "artifactName":            "GRC-Assessment-Platform-Setup-${version}.exe",
-
-      "signingHashAlgorithms": ["sha256"],
-      "signDlls": true,
-
-      "certificateFile":        "${env.WIN_CERT_PATH}",
-      "certificatePassword":    "${env.WIN_CERT_PASSWORD}",
-      "certificateSubjectName": "${env.WIN_CERT_SUBJECT}",
-      "certificateSha1":        "${env.WIN_CERT_SHA1}",
-
-      "rfc3161TimeStampServer": "http://timestamp.digicert.com",
-      "timeStampServer":        "http://timestamp.digicert.com"
+      "icon":             "assets/icon.ico",
+      "artifactName":     "GRC-Assessment-Platform-Setup-${version}.exe"
     },
 
     "nsis": {

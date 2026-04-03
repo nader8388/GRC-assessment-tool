@@ -1,4 +1,4 @@
-name: Build & Sign Windows Installer
+name: Build Windows Installer
 
 on:
   push:
@@ -6,100 +6,66 @@ on:
       - 'v*'
   workflow_dispatch:
 
-# ─────────────────────────────────────────────────────────────────
-#  SIGNING SETUP — choose one method and configure it in GitHub:
-#  Repo → Settings → Secrets and variables → Actions
-#
-#  METHOD A (OV / PFX):
-#    Add Repository Variable:   SIGNING_METHOD = pfx
-#    Add Repository Secrets:
-#      WIN_CERT_BASE64    base64 of your .pfx file
-#      WIN_CERT_PASSWORD  password for the .pfx
-#      WIN_CERT_SHA1      (optional) SHA1 thumbprint
-#
-#  METHOD B (EV / Azure Trusted Signing):
-#    Add Repository Variable:   SIGNING_METHOD = azure-ev
-#    Add Repository Secrets:
-#      AZURE_TENANT_ID          Azure AD tenant ID
-#      AZURE_CLIENT_ID          App registration client ID
-#      AZURE_CLIENT_SECRET      App registration client secret
-#      AZURE_ENDPOINT           e.g. https://wus3.codesigning.azure.net
-#      AZURE_CODE_SIGNING_NAME  Trusted Signing account name
-#      AZURE_CERT_PROFILE_NAME  Certificate profile name
-#
-#  No signing (development):
-#    Leave SIGNING_METHOD unset or set to: none
-# ─────────────────────────────────────────────────────────────────
-
 jobs:
-
-  # ══════════════════════════════════════════════════════════════
-  #  JOB A — OV Certificate (.pfx file)
-  # ══════════════════════════════════════════════════════════════
-  build-pfx:
-    name: Build + Sign (OV PFX)
+  build:
+    name: Build Windows Installer
     runs-on: windows-latest
-    if: vars.SIGNING_METHOD == 'pfx'
 
     steps:
-      - uses: actions/checkout@v4
+      # ── 1. Checkout ──────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      # ── 2. Node.js ───────────────────────────────────────────
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
-      - name: Decode certificate
-        shell: pwsh
-        run: |
-          $bytes = [Convert]::FromBase64String("${{ secrets.WIN_CERT_BASE64 }}")
-          [IO.File]::WriteAllBytes("$env:RUNNER_TEMP\cert.pfx", $bytes)
-
-      - name: Verify certificate is valid and not expired
-        shell: pwsh
-        run: |
-          $pw  = ConvertTo-SecureString "${{ secrets.WIN_CERT_PASSWORD }}" -AsPlainText -Force
-          $cert = Get-PfxCertificate -FilePath "$env:RUNNER_TEMP\cert.pfx" -Password $pw
-          Write-Host "Subject:  $($cert.Subject)"
-          Write-Host "Expires:  $($cert.NotAfter)"
-          Write-Host "SHA1:     $($cert.Thumbprint)"
-          if ($cert.NotAfter -lt (Get-Date)) { throw "Certificate has EXPIRED" }
-
-      - name: npm install
+      # ── 3. Install dependencies ──────────────────────────────
+      # postinstall script runs electron-rebuild automatically,
+      # compiling better-sqlite3 native module for this Electron version.
+      - name: Install dependencies
         run: npm ci
         env:
           npm_config_msvs_version: '2022'
 
-      - name: Build and sign installer
+      # ── 4. Build installer ───────────────────────────────────
+      # electron-builder signs automatically when CSC_LINK and
+      # CSC_KEY_PASSWORD env vars are set. If they are absent it
+      # builds unsigned with no errors.
+      - name: Build installer
         run: npm run build:nsis
         env:
-          GH_TOKEN:          ${{ secrets.GITHUB_TOKEN }}
-          WIN_CERT_PATH:     ${{ runner.temp }}\cert.pfx
-          WIN_CERT_PASSWORD: ${{ secrets.WIN_CERT_PASSWORD }}
-          WIN_CERT_SHA1:     ${{ secrets.WIN_CERT_SHA1 }}
-          WIN_CERT_SUBJECT:  ""
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # OV/PFX signing — only active when secret WIN_CERT_BASE64 exists
+          CSC_LINK:         ${{ secrets.WIN_CERT_BASE64 }}
+          CSC_KEY_PASSWORD: ${{ secrets.WIN_CERT_PASSWORD }}
 
-      - name: Verify Authenticode signature
+      # ── 5. Show what was built ───────────────────────────────
+      - name: List output
         shell: pwsh
         run: |
           $exe = Get-ChildItem "dist\*.exe" | Select-Object -First 1
-          $sig = Get-AuthenticodeSignature $exe.FullName
-          Write-Host "Signer:  $($sig.SignerCertificate.Subject)"
-          Write-Host "Status:  $($sig.Status)"
-          if ($sig.Status -ne 'Valid') { throw "Signature invalid: $($sig.Status)" }
+          if ($exe) {
+            $sig = Get-AuthenticodeSignature $exe.FullName
+            Write-Host "Built:  $($exe.Name)"
+            Write-Host "Size:   $([math]::Round($exe.Length / 1MB, 1)) MB"
+            Write-Host "Signed: $($sig.Status)"
+          } else {
+            Write-Error "No .exe found in dist\"
+          }
 
-      - name: Remove certificate from runner
-        if: always()
-        shell: pwsh
-        run: Remove-Item "$env:RUNNER_TEMP\cert.pfx" -Force -ErrorAction SilentlyContinue
-
-      - uses: actions/upload-artifact@v4
+      # ── 6. Upload .exe as artifact ───────────────────────────
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
         with:
-          name: GRC-Platform-Signed-OV
+          name: GRC-Assessment-Platform-Installer
           path: dist/GRC-Assessment-Platform-Setup-*.exe
           retention-days: 90
 
-      - name: Create release
+      # ── 7. Create GitHub Release on tag push ─────────────────
+      - name: Create Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
@@ -108,157 +74,15 @@ jobs:
           body: |
             ## GRC Assessment Platform ${{ github.ref_name }}
 
-            Signed with an OV code signing certificate.
+            ### Install
+            1. Download `GRC-Assessment-Platform-Setup-*.exe`
+            2. Run it — no other software required
+            3. Follow the wizard (Next -> Install -> Finish)
 
-            > If Windows SmartScreen appears on first installs, click **More info → Run anyway**.
-            > SmartScreen builds trust automatically after enough installs.
+            ### Data location
+            `%APPDATA%\GRC Assessment Platform\grc_assessments.db`
 
-            **Install:** Download the .exe and run it. No other software needed.
-            **Data:** `%APPDATA%\GRC Assessment Platform\grc_assessments.db`
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-
-  # ══════════════════════════════════════════════════════════════
-  #  JOB B — EV Certificate via Azure Trusted Signing (~$10/mo)
-  #  Gives instant SmartScreen trust from first install.
-  # ══════════════════════════════════════════════════════════════
-  build-ev:
-    name: Build + Sign (EV Azure Trusted Signing)
-    runs-on: windows-latest
-    if: vars.SIGNING_METHOD == 'azure-ev'
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install .NET sign tool
-        shell: pwsh
-        run: dotnet tool install --global sign --version 0.9.1-beta.24170.3
-
-      - name: npm install
-        run: npm ci
-        env:
-          npm_config_msvs_version: '2022'
-
-      - name: Build installer (unsigned pass)
-        run: npm run build:nsis
-        env:
-          GH_TOKEN:          ${{ secrets.GITHUB_TOKEN }}
-          WIN_CERT_PATH:     ""
-          WIN_CERT_PASSWORD: ""
-          WIN_CERT_SHA1:     ""
-          WIN_CERT_SUBJECT:  "__skip__"
-
-      - name: Sign via Azure Trusted Signing
-        shell: pwsh
-        env:
-          AZURE_TENANT_ID:         ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_CLIENT_ID:         ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_CLIENT_SECRET:     ${{ secrets.AZURE_CLIENT_SECRET }}
-          AZURE_ENDPOINT:          ${{ secrets.AZURE_ENDPOINT }}
-          AZURE_CODE_SIGNING_NAME: ${{ secrets.AZURE_CODE_SIGNING_NAME }}
-          AZURE_CERT_PROFILE_NAME: ${{ secrets.AZURE_CERT_PROFILE_NAME }}
-        run: |
-          $exe = (Get-ChildItem "dist\*.exe" | Select-Object -First 1).FullName
-          Write-Host "Signing: $exe"
-          sign code azure-key-vault `
-            --publisher-name "GRC Assessment Platform" `
-            --description "GRC Assessment Platform Installer" `
-            --description-url "https://github.com/${{ github.repository }}" `
-            --azure-key-vault-tenant-id    $env:AZURE_TENANT_ID `
-            --azure-key-vault-client-id    $env:AZURE_CLIENT_ID `
-            --azure-key-vault-client-secret $env:AZURE_CLIENT_SECRET `
-            --azure-key-vault-url          $env:AZURE_ENDPOINT `
-            --azure-key-vault-certificate  "$env:AZURE_CODE_SIGNING_NAME/$env:AZURE_CERT_PROFILE_NAME" `
-            --timestamp-url "http://timestamp.acs.microsoft.com" `
-            "$exe"
-
-      - name: Verify EV signature
-        shell: pwsh
-        run: |
-          $exe = Get-ChildItem "dist\*.exe" | Select-Object -First 1
-          $sig = Get-AuthenticodeSignature $exe.FullName
-          Write-Host "Signer: $($sig.SignerCertificate.Subject)"
-          Write-Host "Status: $($sig.Status)"
-          if ($sig.Status -ne 'Valid') { throw "EV signature invalid: $($sig.Status)" }
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: GRC-Platform-Signed-EV
-          path: dist/GRC-Assessment-Platform-Setup-*.exe
-          retention-days: 90
-
-      - name: Create release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/GRC-Assessment-Platform-Setup-*.exe
-          name: GRC Assessment Platform ${{ github.ref_name }}
-          body: |
-            ## GRC Assessment Platform ${{ github.ref_name }}
-
-            EV signed — installs with no SmartScreen warning.
-
-            **Install:** Download the .exe and run it. No other software needed.
-            **Data:** `%APPDATA%\GRC Assessment Platform\grc_assessments.db`
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-
-  # ══════════════════════════════════════════════════════════════
-  #  JOB C — Unsigned (development / testing)
-  #  Runs automatically when SIGNING_METHOD is not set.
-  # ══════════════════════════════════════════════════════════════
-  build-unsigned:
-    name: Build Unsigned (Development)
-    runs-on: windows-latest
-    if: vars.SIGNING_METHOD == '' || vars.SIGNING_METHOD == 'none'
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: npm install
-        run: npm ci
-        env:
-          npm_config_msvs_version: '2022'
-
-      - name: Build installer (unsigned)
-        run: npm run build:nsis
-        env:
-          GH_TOKEN:          ${{ secrets.GITHUB_TOKEN }}
-          WIN_CERT_PATH:     ""
-          WIN_CERT_PASSWORD: ""
-          WIN_CERT_SHA1:     ""
-          WIN_CERT_SUBJECT:  "__skip__"
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: GRC-Platform-Unsigned
-          path: dist/GRC-Assessment-Platform-Setup-*.exe
-          retention-days: 30
-
-      - name: Create release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/GRC-Assessment-Platform-Setup-*.exe
-          name: GRC Assessment Platform ${{ github.ref_name }} (Unsigned)
-          body: |
-            ## GRC Assessment Platform ${{ github.ref_name }} (Unsigned)
-
-            > ⚠️ Not digitally signed. SmartScreen will show a warning — click **More info → Run anyway**.
-
-            **Install:** Download the .exe and run it.
-            **Data:** `%APPDATA%\GRC Assessment Platform\grc_assessments.db`
+            ### AI Assessment
+            Open Settings after install to add your Anthropic API key.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
