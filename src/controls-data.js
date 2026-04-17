@@ -1710,5 +1710,4 @@ function getFISMAModControls() {
     .map(c => ({...c}));
 }
 
-
-if (typeof module !== 'undefined') module.exports = { STANDARDS };
+if (typeof module !== "undefined") module.exports = { STANDARDS };

@@ -68,6 +68,8 @@ header *{-webkit-app-region:no-drag;}
 .std-nist .std-dot{background:#e3813b;}.std-nist .std-id{color:#e3813b;}.std-nist::before{background:linear-gradient(135deg,rgba(227,129,59,.06),transparent 60%);}.std-nist.selected{border-color:rgba(227,129,59,.5);}.std-nist .std-checkmark{background:rgba(227,129,59,.2);color:#e3813b;}
 .std-pci .std-dot{background:#f85149;}.std-pci .std-id{color:#f85149;}.std-pci::before{background:linear-gradient(135deg,rgba(248,81,73,.06),transparent 60%);}.std-pci.selected{border-color:rgba(248,81,73,.5);}.std-pci .std-checkmark{background:rgba(248,81,73,.2);color:#f85149;}
 .std-hipaa .std-dot{background:#a371f7;}.std-hipaa .std-id{color:#a371f7;}.std-hipaa::before{background:linear-gradient(135deg,rgba(163,113,247,.06),transparent 60%);}.std-hipaa.selected{border-color:rgba(163,113,247,.5);}.std-hipaa .std-checkmark{background:rgba(163,113,247,.2);color:#a371f7;}
+.std-fismaHigh .std-dot{background:#ff7b72;}.std-fismaHigh .std-id{color:#ff7b72;}.std-fismaHigh::before{background:linear-gradient(135deg,rgba(255,123,114,.06),transparent 60%);}.std-fismaHigh.selected{border-color:rgba(255,123,114,.5);}.std-fismaHigh .std-checkmark{background:rgba(255,123,114,.2);color:#ff7b72;}
+.std-fismaMod .std-dot{background:#ffa657;}.std-fismaMod .std-id{color:#ffa657;}.std-fismaMod::before{background:linear-gradient(135deg,rgba(255,166,87,.06),transparent 60%);}.std-fismaMod.selected{border-color:rgba(255,166,87,.5);}.std-fismaMod .std-checkmark{background:rgba(255,166,87,.2);color:#ffa657;}
 
 /* ══ MAIN APP ══ */
 #main-app{flex:1;display:flex;overflow:hidden;display:none;}
@@ -139,11 +141,20 @@ header *{-webkit-app-region:no-drag;}
 .row2 .fl{flex:1;}
 .ev-list{display:flex;flex-direction:column;gap:6px;margin-bottom:8px;}
 .ev-item{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;}
-.ev-name{flex:1;}
-.ev-del{background:none;border:none;color:var(--muted);cursor:pointer;padding:1px 5px;border-radius:3px;font-size:13px;transition:color .15s;}
+.ev-item.ev-file{cursor:pointer;}
+.ev-item.ev-file:hover{border-color:var(--accent);background:var(--s2);}
+.ev-icon{font-size:15px;flex-shrink:0;}
+.ev-meta{flex:1;min-width:0;}
+.ev-name{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;}
+.ev-size{font-size:10px;color:var(--muted);}
+.ev-del{background:none;border:none;color:var(--muted);cursor:pointer;padding:1px 5px;border-radius:3px;font-size:13px;transition:color .15s;flex-shrink:0;}
 .ev-del:hover{color:var(--red);}
-.ev-row{display:flex;gap:7px;}
-.ev-row .f-in{flex:1;}
+.ev-row{display:flex;gap:7px;flex-wrap:wrap;}
+.ev-row .f-in{flex:1;min-width:120px;}
+.ev-drop-zone{border:2px dashed var(--border);border-radius:8px;padding:12px;text-align:center;font-size:12px;color:var(--muted);transition:all .2s;margin-bottom:6px;cursor:pointer;}
+.ev-drop-zone.drag-over{border-color:var(--accent);background:rgba(88,166,255,.06);color:var(--accent);}
+.ev-section-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin:10px 0 4px;}
+.ev-attach-btn{display:flex;align-items:center;gap:5px;white-space:nowrap;}
 .save-bar{padding:12px 26px;border-top:1px solid var(--border);background:var(--bg);display:flex;justify-content:flex-end;align-items:center;gap:8px;flex-shrink:0;}
 .saved-msg{font-size:12px;color:var(--green);opacity:0;transition:opacity .3s;margin-right:auto;}
 .saved-msg.show{opacity:1;}
@@ -242,6 +253,50 @@ header *{-webkit-app-region:no-drag;}
 .toast.ok{border-color:var(--green);}
 .toast.err{border-color:var(--red);}
 .hidden{display:none!important;}
+
+/* ── AUDIT LOG ── */
+.audit-btn{position:relative;}
+.audit-btn .h-badge{position:absolute;top:-5px;right:-5px;background:var(--accent);color:#0d1117;border-radius:99px;font-size:9px;font-weight:700;padding:1px 5px;min-width:16px;text-align:center;display:none;}
+.audit-btn .h-badge.show{display:block;}
+.audit-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:center;justify-content:center;backdrop-filter:blur(3px);}
+.audit-overlay.open{display:flex;}
+.audit-modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;width:min(960px,95vw);height:min(700px,90vh);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.6);}
+.audit-modal-header{display:flex;align-items:center;gap:14px;padding:16px 22px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.audit-modal-title{font-size:16px;font-weight:700;flex:1;}
+.audit-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:4px 8px;border-radius:5px;font-family:var(--sans);}
+.audit-close:hover{background:var(--s2);color:var(--text);}
+.audit-toolbar{display:flex;gap:8px;padding:12px 22px;border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap;align-items:center;}
+.audit-search{flex:1;min-width:180px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 11px;border-radius:7px;font-size:13px;font-family:var(--sans);outline:none;transition:border-color .15s;}
+.audit-search:focus{border-color:var(--accent);}
+.audit-search::placeholder{color:var(--muted);}
+.audit-filter-sel{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:12px;font-family:var(--sans);outline:none;cursor:pointer;}
+.audit-count{font-size:12px;color:var(--muted);margin-left:auto;white-space:nowrap;}
+.audit-body{flex:1;overflow:hidden;display:flex;flex-direction:column;}
+.audit-table-wrap{flex:1;overflow-y:auto;}
+.audit-table-wrap::-webkit-scrollbar{width:5px;}
+.audit-table-wrap::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.audit-table{width:100%;border-collapse:collapse;font-size:13px;}
+.audit-table thead{position:sticky;top:0;z-index:1;}
+.audit-table th{background:var(--bg);padding:9px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;}
+.audit-table td{padding:10px 14px;border-bottom:1px solid rgba(48,54,61,.4);vertical-align:top;}
+.audit-table tr:last-child td{border-bottom:none;}
+.audit-table tr:hover td{background:var(--s2);}
+.audit-table tr{cursor:pointer;}
+.al-ts{font-family:var(--mono);font-size:11px;color:var(--muted);white-space:nowrap;}
+.al-std{font-size:11px;font-weight:600;padding:2px 7px;border-radius:3px;white-space:nowrap;}
+.al-ctrl{font-family:var(--mono);font-size:11px;color:var(--accent);white-space:nowrap;}
+.al-name{font-size:12px;color:var(--text);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.al-action{font-size:12px;}
+.al-from{color:var(--muted);text-decoration:line-through;}
+.al-arrow{color:var(--muted);margin:0 4px;}
+.al-to{font-weight:600;}
+.al-assessor{font-size:11px;color:var(--muted);}
+.al-notes-preview{font-size:11px;color:var(--muted);font-style:italic;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.al-empty{padding:48px;text-align:center;color:var(--muted);font-size:13px;}
+.audit-footer{display:flex;align-items:center;gap:10px;padding:12px 22px;border-top:1px solid var(--border);flex-shrink:0;background:var(--bg);}
+.audit-footer-info{font-size:12px;color:var(--muted);flex:1;}
+.dash-std-bar{height:3px;border-radius:99px;margin-bottom:16px;transition:background .3s;}
+.h-std-tag{font-size:10px;padding:1px 6px;border-radius:3px;font-weight:600;letter-spacing:.3px;}
 </style>
 </head>
 <body>
@@ -256,12 +311,67 @@ header *{-webkit-app-region:no-drag;}
     </div>
   </div>
   <div class="hdr-right" id="hdr-actions" style="display:none">
+    <button class="btn audit-btn" id="audit-btn" onclick="openAuditLog()" title="Audit Log">
+      📋 Audit Log
+      <span class="h-badge" id="h-badge">0</span>
+    </button>
     <button class="btn" onclick="doImport()">↑ Import</button>
     <button class="btn" onclick="doExportJSON()">↓ Backup</button>
     <button class="btn btn-primary" onclick="switchTab('export')">▶ Export</button>
   </div>
   <button class="btn btn-settings" onclick="openSettings()" title="Settings — API Key &amp; Preferences" style="margin-left:8px">⚙ Settings</button>
 </header>
+
+<!-- ══ AUDIT LOG MODAL ══ -->
+<div class="audit-overlay" id="audit-overlay" onclick="closeAuditLogOverlay(event)">
+  <div class="audit-modal">
+    <div class="audit-modal-header">
+      <div class="audit-modal-title">📋 Audit Log</div>
+      <div style="display:flex;gap:8px;margin-left:auto;align-items:center;">
+        <button class="btn btn-success" onclick="exportAuditLog()" style="font-size:12px;padding:5px 12px">↓ Export CSV</button>
+        <button class="btn btn-danger" onclick="confirmClearAuditLog()" style="font-size:12px;padding:5px 12px">🗑 Clear Log</button>
+        <button class="audit-close" onclick="closeAuditLog()">✕</button>
+      </div>
+    </div>
+    <div class="audit-toolbar">
+      <input class="audit-search" id="audit-search" placeholder="Search controls, actions, assessors..." oninput="renderAuditTable()">
+      <select class="audit-filter-sel" id="audit-std-filter" onchange="renderAuditTable()">
+        <option value="">All Standards</option>
+      </select>
+      <select class="audit-filter-sel" id="audit-action-filter" onchange="renderAuditTable()">
+        <option value="">All Actions</option>
+        <option value="status">Status Change</option>
+        <option value="notes">Notes Updated</option>
+        <option value="finding">Finding Updated</option>
+        <option value="cleared">Cleared</option>
+      </select>
+      <select class="audit-filter-sel" id="audit-date-filter" onchange="renderAuditTable()">
+        <option value="">All Time</option>
+        <option value="today">Today</option>
+        <option value="week">This Week</option>
+        <option value="month">This Month</option>
+      </select>
+      <span class="audit-count" id="audit-count">0 entries</span>
+    </div>
+    <div class="audit-body">
+      <div class="audit-table-wrap">
+        <table class="audit-table">
+          <thead>
+            <tr>
+              <th>Timestamp</th><th>Standard</th><th>Control</th>
+              <th>Control Name</th><th>Action / Change</th>
+              <th>Assessor</th><th>Notes Preview</th>
+            </tr>
+          </thead>
+          <tbody id="audit-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="audit-footer">
+      <div class="audit-footer-info" id="audit-footer-info">Audit log is stored in the local SQLite database — persists across sessions.</div>
+    </div>
+  </div>
+</div>
 
 <div class="app-body">
 
@@ -314,6 +424,7 @@ header *{-webkit-app-region:no-drag;}
     <!-- Dashboard -->
     <div id="tab-dashboard" class="hidden" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
       <div class="dash-inner">
+        <div class="dash-std-bar" id="dash-std-bar"></div>
         <div style="font-size:18px;font-weight:600;margin-bottom:3px" id="dash-title">Dashboard</div>
         <div style="color:var(--muted);font-size:12px;margin-bottom:22px" id="dash-sub"></div>
         <div class="meta-grid">
@@ -454,6 +565,11 @@ let appInfo      = {};
 async function boot() {
   appInfo = await window.api.appInfo();
   apiKey  = await window.api.getApiKey();
+  // Init audit badge with persisted count
+  try {
+    const total = await window.api.auditCount();
+    updateAuditBadge(total);
+  } catch(e){}
 
   // Populate settings UI
   const kInput = document.getElementById('api-key-input');
@@ -682,7 +798,11 @@ function selectCtrl(id) {
   ).join('');
 
   const evHtml = (d.evidence||[]).map((ev,i) =>
-    `<div class="ev-item"><span style="color:var(--accent)">📄</span><span class="ev-name">${esc(ev)}</span><button class="ev-del" onclick="removeEv(${i})">✕</button></div>`
+    `<div class="ev-item">
+      <span class="ev-icon">📄</span>
+      <div class="ev-meta"><span class="ev-name">${esc(ev)}</span></div>
+      <button class="ev-del" onclick="removeEv(${i})" title="Remove">✕</button>
+    </div>`
   ).join('');
 
   const aiBlock = apiKey
@@ -740,10 +860,17 @@ function selectCtrl(id) {
     </div>
     <div class="fl">
       <label class="fl-lbl">Evidence / Artifacts</label>
+      <div class="ev-drop-zone" id="ev-drop-zone"
+           ondragover="evDragOver(event)" ondragleave="evDragLeave(event)" ondrop="evDrop(event)"
+           onclick="attachFiles()">
+        📎 Drop files here or click to attach
+      </div>
+      <div id="ev-attachments-list"></div>
+      <div class="ev-section-lbl" id="ev-refs-label" style="display:none">Text References</div>
       <div class="ev-list" id="ev-list">${evHtml}</div>
       <div class="ev-row">
-        <input class="f-in" id="ev-input" placeholder="Document name, screenshot, system reference...">
-        <button class="btn" onclick="addEv()">+ Add</button>
+        <input class="f-in" id="ev-input" placeholder="Document name, screenshot, URL, system reference...">
+        <button class="btn" onclick="addEv()">+ Add Reference</button>
       </div>
     </div>
     <div class="fl">
@@ -783,6 +910,8 @@ function selectCtrl(id) {
     </div>
   `;
   document.getElementById('detail-content').closest('.detail-wrap').scrollTo(0,0);
+  renderEvList();
+  renderAttachmentsList();
 }
 
 function onStatusChange(val) {
@@ -792,6 +921,20 @@ function onStatusChange(val) {
   });
 }
 
+function renderEvList() {
+  const evList = document.getElementById('ev-list');
+  const refsLabel = document.getElementById('ev-refs-label');
+  if (!evList) return;
+  const refs = (assessData[selectedId]||{}).evidence||[];
+  if (refsLabel) refsLabel.style.display = refs.length ? '' : 'none';
+  evList.innerHTML = refs.map((ev,i)=>
+    `<div class="ev-item">
+      <span class="ev-icon">📄</span>
+      <div class="ev-meta"><span class="ev-name">${esc(ev)}</span></div>
+      <button class="ev-del" onclick="removeEv(${i})" title="Remove">✕</button>
+    </div>`).join('');
+}
+
 function addEv() {
   const inp = document.getElementById('ev-input');
   if (!inp||!inp.value.trim()) return;
@@ -799,14 +942,90 @@ function addEv() {
   if (!assessData[selectedId].evidence) assessData[selectedId].evidence=[];
   assessData[selectedId].evidence.push(inp.value.trim());
   inp.value='';
-  selectCtrl(selectedId);
+  renderEvList();
 }
 
 function removeEv(idx) {
-  if (assessData[selectedId]?.evidence) {
-    assessData[selectedId].evidence.splice(idx,1);
-    selectCtrl(selectedId);
+  if (!assessData[selectedId]?.evidence) return;
+  assessData[selectedId].evidence.splice(idx,1);
+  renderEvList();
+}
+
+// ── File attachments (stored on disk, paths tracked in SQLite) ─────────
+function getFileIcon(name) {
+  const ext=(name.split('.').pop()||'').toLowerCase();
+  const map={pdf:'📕',doc:'📘',docx:'📘',xls:'📗',xlsx:'📗',
+    ppt:'📙',pptx:'📙',png:'🖼',jpg:'🖼',jpeg:'🖼',
+    gif:'🖼',bmp:'🖼',svg:'🖼',txt:'📄',csv:'📊',
+    zip:'🗜',rar:'🗜',mp4:'🎬',mov:'🎬',mp3:'🎵',eml:'📧',msg:'📧'};
+  return map[ext]||'📎';
+}
+function formatBytes(b) {
+  if (b<1024) return b+' B';
+  if (b<1048576) return (b/1024).toFixed(1)+' KB';
+  return (b/1048576).toFixed(1)+' MB';
+}
+
+async function renderAttachmentsList() {
+  const listEl = document.getElementById('ev-attachments-list');
+  if (!listEl||!selectedId||!activeStd) return;
+  try {
+    const list = await window.api.attachList(activeStd.id, selectedId);
+    if (!list.length) { listEl.innerHTML=''; return; }
+    listEl.innerHTML = `
+      <div class="ev-section-lbl">Attached Files (${list.length})</div>
+      ${list.map(a=>`
+        <div class="ev-item ev-file" title="${esc(a.name)}">
+          <span class="ev-icon">${getFileIcon(a.name)}</span>
+          <div class="ev-meta" onclick="openAttachment('${esc(a.path).replace(/\\/g,'\\\\')}')" style="cursor:pointer">
+            <span class="ev-name">${esc(a.name)}</span>
+            <span class="ev-size">${formatBytes(a.size)} · ${new Date(a.added).toLocaleDateString()}</span>
+          </div>
+          <button class="ev-del" onclick="removeAttachment('${esc(a.name)}')" title="Remove">✕</button>
+        </div>`).join('')}`;
+  } catch(e) { listEl.innerHTML=''; }
+}
+
+function evDragOver(e) {
+  e.preventDefault();
+  document.getElementById('ev-drop-zone')?.classList.add('drag-over');
+}
+function evDragLeave() {
+  document.getElementById('ev-drop-zone')?.classList.remove('drag-over');
+}
+async function evDrop(e) {
+  e.preventDefault();
+  document.getElementById('ev-drop-zone')?.classList.remove('drag-over');
+  const files = [...(e.dataTransfer.files||[])].map(f=>f.path).filter(Boolean);
+  if (files.length) await processFilePaths(files);
+}
+
+async function attachFiles() {
+  try {
+    const paths = await window.api.attachPickFiles();
+    if (paths&&paths.length) await processFilePaths(paths);
+  } catch(e){ toast('Could not open file picker.','err'); }
+}
+
+async function processFilePaths(paths) {
+  if (!selectedId||!activeStd) return;
+  for (const p of paths) {
+    const res = await window.api.attachCopy(activeStd.id, selectedId, p);
+    if (res.ok) toast(`Attached: ${res.name}`,'ok');
+    else toast(res.error||'Failed to attach file.','err');
   }
+  await renderAttachmentsList();
+}
+
+async function openAttachment(filePath) {
+  await window.api.openPath(filePath);
+}
+
+async function removeAttachment(name) {
+  if (!confirm(`Remove attachment "${name}"?`)) return;
+  await window.api.attachRemove(activeStd.id, selectedId, name);
+  await renderAttachmentsList();
+  toast('Attachment removed.','ok');
 }
 
 function gatherForm() {
@@ -826,9 +1045,11 @@ function gatherForm() {
 
 async function saveCtrl() {
   if (!selectedId) return;
+  const prevData = assessData[selectedId] || {};
   const data = gatherForm();
   await window.api.save(activeStd.id, selectedId, data);
   assessData[selectedId] = data;
+  addAuditEntry(selectedId, prevData, data, 'saved');
   renderList();
   const msg = document.getElementById('saved-msg');
   msg.classList.add('show');
@@ -841,8 +1062,10 @@ async function saveCtrl() {
 
 async function clearCtrl() {
   if (!selectedId||!confirm('Clear all data for '+selectedId+'?')) return;
+  const prevData = assessData[selectedId] || {};
   await window.api.clear(activeStd.id, selectedId);
   delete assessData[selectedId];
+  addAuditEntry(selectedId, prevData, {}, 'cleared');
   selectCtrl(selectedId);
   renderList();
 }
@@ -854,6 +1077,10 @@ function buildDashboard() {
   document.getElementById('dash-title').textContent = activeStd.label+' Dashboard';
   document.getElementById('dash-sub').textContent   = activeStd.fullName;
   document.getElementById('scope-lbl').textContent  = activeStd.scopeLabel||'Scope';
+  const bar = document.getElementById('dash-std-bar');
+  if (bar) bar.style.background = `linear-gradient(90deg, ${activeStd.color} 0%, ${activeStd.color}44 70%, transparent 100%)`;
+  const pctEl = document.getElementById('prog-pct');
+  if (pctEl) pctEl.style.color = activeStd.color;
   populateDashMeta();
   updateDashStats();
 }
@@ -1088,7 +1315,220 @@ function toast(msg,type) {
   t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3500);
 }
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-document.addEventListener('keydown',e=>{ if(e.ctrlKey&&e.key==='Enter'&&selectedId) saveCtrl(); });
+document.addEventListener('keydown',e=>{
+  if(e.ctrlKey&&e.key==='Enter'&&selectedId) saveCtrl();
+  if(e.key==='Escape') closeAuditLog();
+});
+
+// ════════════════════════════════════════════════════════
+//  AUDIT LOG — SQLite-backed via IPC, persists across sessions
+// ════════════════════════════════════════════════════════
+const STATUS_COLORS = {
+  conform:'var(--green)',partial:'var(--yellow)',nonconform:'var(--red)',na:'var(--muted)',
+  satisfied:'var(--green)',notsatisfied:'var(--red)',
+  met:'var(--green)',notmet:'var(--red)',observation:'var(--orange)',
+  yes:'var(--green)',no:'var(--red)',
+  pass:'var(--green)',fail:'var(--red)',compensating:'var(--orange)',
+};
+function getStatusColor(v){ return STATUS_COLORS[v]||'var(--muted)'; }
+
+async function addAuditEntry(ctrlId, prevData, newData, action) {
+  if (!activeStd) return;
+  const ctrl = activeStd.controls.find(c=>c.id===ctrlId);
+  if (!ctrl) return;
+
+  const changes = [];
+  if (action==='cleared') {
+    changes.push({field:'control', from:'', to:'Cleared'});
+  } else {
+    const fields = [
+      ['status','status'], ['risk','risk'], ['remdate','remdate'],
+      ['notes','notes'], ['finding','finding'],
+      ['recommendation','recommendation'],
+    ];
+    fields.forEach(([key,field])=>{
+      if((prevData[key]||'')!==(newData[key]||''))
+        changes.push({field, from:prevData[key]||'', to:newData[key]||''});
+    });
+    const prevEv=(prevData.evidence||[]).join('|');
+    const newEv=(newData.evidence||[]).join('|');
+    if(prevEv!==newEv) changes.push({field:'evidence',from:prevEv,to:newEv});
+  }
+  if (changes.length===0 && action!=='cleared') return;
+
+  const assessor = newData.assessor||metaData.assessor||'';
+  const now      = new Date();
+  const entries  = changes.map((c,i)=>({
+    ts:        now.toISOString(),
+    ts_display:now.toLocaleString(),
+    std_id:    activeStd.id,
+    std_label: activeStd.label,
+    std_color: activeStd.color,
+    ctrl_id:   ctrlId,
+    ctrl_name: ctrl.name,
+    field:     c.field,
+    from_val:  c.from,
+    to_val:    c.to,
+    status:    newData.status||prevData.status||'',
+    assessor,
+    notes_preview:(newData.notes||'').slice(0,80),
+    action,
+  }));
+
+  try {
+    await window.api.auditAppend(entries);
+    const total = await window.api.auditCount();
+    updateAuditBadge(total);
+  } catch(e){ console.error('Audit log error:', e); }
+}
+
+function updateAuditBadge(count) {
+  const badge = document.getElementById('h-badge');
+  if (!badge) return;
+  if (count>0){
+    badge.textContent = count>999?'999+':count;
+    badge.classList.add('show');
+  } else {
+    badge.classList.remove('show');
+  }
+}
+
+async function openAuditLog() {
+  const overlay = document.getElementById('audit-overlay');
+  if (!overlay) return;
+  overlay.classList.add('open');
+  await populateAuditFilters();
+  await renderAuditTable();
+}
+
+function closeAuditLog() {
+  const overlay = document.getElementById('audit-overlay');
+  if (overlay) overlay.classList.remove('open');
+}
+
+function closeAuditLogOverlay(e) {
+  if (e.target===document.getElementById('audit-overlay')) closeAuditLog();
+}
+
+async function populateAuditFilters() {
+  const stds = await window.api.auditGetStandards();
+  const sel  = document.getElementById('audit-std-filter');
+  if (!sel) return;
+  while (sel.options.length>1) sel.remove(1);
+  stds.forEach(s=>{
+    const opt = document.createElement('option');
+    opt.value=s.std_id; opt.textContent=s.std_label;
+    sel.appendChild(opt);
+  });
+}
+
+async function renderAuditTable() {
+  const search    = document.getElementById('audit-search')?.value||'';
+  const stdFilter = document.getElementById('audit-std-filter')?.value||'';
+  const actFilter = document.getElementById('audit-action-filter')?.value||'';
+  const dateFilter= document.getElementById('audit-date-filter')?.value||'';
+
+  const rows = await window.api.auditQuery({search, stdFilter, actFilter, dateFilter});
+  const total= await window.api.auditCount();
+
+  const tbody   = document.getElementById('audit-tbody');
+  const countEl = document.getElementById('audit-count');
+  const footerEl= document.getElementById('audit-footer-info');
+  if (!tbody) return;
+
+  if (countEl) countEl.textContent=`${rows.length.toLocaleString()} of ${total.toLocaleString()} entries`;
+
+  if (footerEl) {
+    const info = await window.api.auditInfo();
+    const oldest = info.oldest ? new Date(info.oldest).toLocaleDateString() : '—';
+    const newest = info.newest ? new Date(info.newest).toLocaleDateString() : '—';
+    footerEl.textContent=`${total.toLocaleString()} total entries · Oldest: ${oldest} · Newest: ${newest} · Stored in local SQLite database`;
+  }
+
+  const fieldLabel={
+    status:'Status',risk:'Risk',remdate:'Rem. Date',notes:'Notes',
+    finding:'Finding',recommendation:'Recommendation',evidence:'Evidence',control:'Control'
+  };
+
+  if (rows.length===0) {
+    tbody.innerHTML=`<tr><td colspan="7" class="al-empty">${total===0?'No audit entries yet. Start assessing controls to build the log.':'No entries match the current filters.'}</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map(e=>{
+    const dotColor = getStatusColor(e.status);
+    const stdTag   = `<span class="al-std" style="background:${e.std_color}22;color:${e.std_color}">${esc(e.std_label)}</span>`;
+    const fLbl     = fieldLabel[e.field]||e.field;
+
+    let actionHtml='';
+    if (e.field==='status') {
+      actionHtml = e.from_val
+        ? `<span class="al-from">${esc(e.from_val)}</span><span class="al-arrow">→</span><span class="al-to" style="color:${dotColor}">${esc(e.to_val)}</span>`
+        : `<span class="al-to" style="color:${dotColor}">Set: ${esc(e.to_val)}</span>`;
+    } else if (e.action==='cleared') {
+      actionHtml=`<span style="color:var(--red)">Cleared</span>`;
+    } else if (['notes','finding','recommendation','evidence'].includes(e.field)) {
+      actionHtml=`<span style="color:var(--muted)">${fLbl} updated</span>`;
+    } else {
+      actionHtml = e.from_val
+        ? `<span style="color:var(--muted)">${fLbl}: </span><span class="al-from">${esc(e.from_val)}</span><span class="al-arrow">→</span><span style="color:var(--text)">${esc(e.to_val)}</span>`
+        : `<span style="color:var(--muted)">${fLbl}: </span><span style="color:var(--text)">${esc(e.to_val)}</span>`;
+    }
+
+    return `<tr onclick="jumpToCtrlFromAudit('${esc(e.std_id)}','${esc(e.ctrl_id)}')" title="Jump to ${esc(e.ctrl_id)}">
+      <td class="al-ts">${esc(e.ts_display||e.ts)}</td>
+      <td>${stdTag}</td>
+      <td class="al-ctrl"><span style="display:inline-flex;align-items:center;gap:5px">
+        <span style="width:7px;height:7px;border-radius:50%;background:${dotColor};flex-shrink:0;display:inline-block"></span>
+        ${esc(e.ctrl_id)}</span></td>
+      <td class="al-name" title="${esc(e.ctrl_name)}">${esc(e.ctrl_name)}</td>
+      <td class="al-action">${actionHtml}</td>
+      <td class="al-assessor">${esc(e.assessor||'—')}</td>
+      <td class="al-notes-preview" title="${esc(e.notes_preview)}">${esc(e.notes_preview)||'<span style="color:var(--border)">—</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function exportAuditLog() {
+  const rows = await window.api.auditQuery({search:'',stdFilter:'',actFilter:'',dateFilter:''});
+  if (!rows.length){ toast('No audit entries to export.','err'); return; }
+  const headers=['Timestamp','Standard','Control ID','Control Name','Field','From','To','Status','Assessor','Notes Preview'];
+  const csv = [
+    headers.map(h=>`"${h}"`).join(','),
+    ...rows.map(e=>[
+      e.ts_display||e.ts, e.std_label, e.ctrl_id, e.ctrl_name,
+      e.field, e.from_val, e.to_val, e.status, e.assessor, e.notes_preview
+    ].map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(','))
+  ].join('
+');
+  const result = await window.api.auditExportCSV(csv);
+  if (result.ok) toast('Audit log saved to CSV.','ok');
+}
+
+async function confirmClearAuditLog() {
+  const total = await window.api.auditCount();
+  if (!confirm(`Permanently delete all ${total} audit log entries?
+
+This cannot be undone. Export a CSV first if you need a record.`)) return;
+  await window.api.auditClear();
+  updateAuditBadge(0);
+  await renderAuditTable();
+  toast('Audit log cleared.','ok');
+}
+
+function jumpToCtrlFromAudit(stdId, ctrlId) {
+  closeAuditLog();
+  if (!activeStd||activeStd.id!==stdId) {
+    toast(`Switch to ${stdId} to view this control.`,'ok');
+    return;
+  }
+  switchTab('assessment');
+  selectCtrl(ctrlId);
+  setTimeout(()=>{
+    const el=document.querySelector('.ctrl-item.sel');
+    if(el) el.scrollIntoView({behavior:'smooth',block:'nearest'});
+  },100);
+}
 
 boot();
 </script>
