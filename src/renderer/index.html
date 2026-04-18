@@ -397,7 +397,7 @@ header *{-webkit-app-region:no-drag;}
     <button class="auth-btn" onclick="authSubmit()">Sign In</button>
     <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);text-align:center">
       <span style="font-size:11px;color:var(--muted)">First time here? Ask your administrator for an account.</span><br>
-      <button id="db-reset-btn" style="background:none;border:none;font-size:11px;color:var(--muted);cursor:pointer;text-decoration:underline;margin-top:4px;font-family:var(--sans);padding:0">Reset database (fresh install)</button>
+      <button id="db-reset-btn" onclick="dbResetClick()" style="background:none;border:none;font-size:11px;color:var(--muted);cursor:pointer;text-decoration:underline;margin-top:4px;font-family:var(--sans);padding:0">Reset database (fresh install)</button>
     </div>
   </div>
   <!-- First-run setup -->
@@ -1927,35 +1927,27 @@ function showLoginScreen() {
 }
 
 async function showDatabaseResetConfirm() {
-  // Use Electron's native dialog (prompt/alert are blocked with contextIsolation)
-  const confirmed = await window.api.confirmDialog({
-    title:   'Reset Database — Fresh Install',
-    message: 'This will permanently delete ALL data:\n\n' +
-             '  • All user accounts\n' +
-             '  • All assessment data\n' +
-             '  • All audit log entries\n' +
-             '  • All attachments and settings\n\n' +
-             'The app will reload and show the account creation screen.\n\n' +
-             'This cannot be undone.',
-    detail:  'Only proceed if you want a completely fresh start.',
-    buttons: ['Cancel', 'Reset Everything'],
-    defaultId: 0,
-    cancelId:  0,
-  });
-
-  if (!confirmed) return;
-
+  console.log('[Reset] Button clicked, calling confirmDialog...');
   try {
-    await window.api.databaseReset();
-    location.reload();
-  } catch(e) {
-    await window.api.confirmDialog({
-      title: 'Reset Failed',
-      message: 'Could not reset the database: ' + e.message,
-      buttons: ['OK'],
+    const confirmed = await window.api.confirmDialog({
+      title:     'Reset Database',
+      message:   'This will permanently delete ALL data including all user accounts, assessments, audit logs and settings. The app will reload to the account creation screen.',
+      detail:    'This cannot be undone.',
+      buttons:   ['Cancel', 'Reset Everything'],
       defaultId: 0,
-      cancelId: 0,
+      cancelId:  0,
     });
+
+    console.log('[Reset] Dialog result:', confirmed);
+    if (!confirmed) return;
+
+    console.log('[Reset] Calling databaseReset...');
+    const result = await window.api.databaseReset();
+    console.log('[Reset] Reset result:', result);
+    location.reload();
+
+  } catch(e) {
+    console.error('[Reset] Error:', e);
   }
 }
 
@@ -2546,16 +2538,12 @@ function jumpToCtrlFromAudit(stdId, ctrlId) {
   },100);
 }
 
-// Attach reset button listener (can't use inline onclick with contextIsolation)
-document.addEventListener('DOMContentLoaded', () => {
-  const btn = document.getElementById('db-reset-btn');
-  if (btn) btn.addEventListener('click', showDatabaseResetConfirm);
-});
-// Also attach immediately in case DOM is already ready
-(function() {
-  const btn = document.getElementById('db-reset-btn');
-  if (btn) btn.addEventListener('click', showDatabaseResetConfirm);
-})();
+// Simple wrapper so onclick="dbResetClick()" works before async function is called
+function dbResetClick() {
+  showDatabaseResetConfirm().catch(function(e) {
+    console.error('Reset error:', e);
+  });
+}
 
 bootAuth();
 </script>
