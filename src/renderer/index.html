@@ -1927,32 +1927,35 @@ function showLoginScreen() {
 }
 
 async function showDatabaseResetConfirm() {
-  const msg = [
-    'RESET DATABASE — Fresh Install',
-    '',
-    'This will permanently delete:',
-    '  - All user accounts',
-    '  - All assessment data',
-    '  - All audit log entries',
-    '  - All settings',
-    '',
-    'The app will restart and show the account creation screen.',
-    '',
-    'Type RESET to confirm:'
-  ].join('\n');
+  // Use Electron's native dialog (prompt/alert are blocked with contextIsolation)
+  const confirmed = await window.api.confirmDialog({
+    title:   'Reset Database — Fresh Install',
+    message: 'This will permanently delete ALL data:\n\n' +
+             '  • All user accounts\n' +
+             '  • All assessment data\n' +
+             '  • All audit log entries\n' +
+             '  • All attachments and settings\n\n' +
+             'The app will reload and show the account creation screen.\n\n' +
+             'This cannot be undone.',
+    detail:  'Only proceed if you want a completely fresh start.',
+    buttons: ['Cancel', 'Reset Everything'],
+    defaultId: 0,
+    cancelId:  0,
+  });
 
-  const input = prompt(msg);
-  if (input !== 'RESET') {
-    if (input !== null) alert('Reset cancelled — you must type RESET exactly.');
-    return;
-  }
+  if (!confirmed) return;
 
   try {
     await window.api.databaseReset();
-    // Reload the app
     location.reload();
   } catch(e) {
-    alert('Reset failed: ' + e.message);
+    await window.api.confirmDialog({
+      title: 'Reset Failed',
+      message: 'Could not reset the database: ' + e.message,
+      buttons: ['OK'],
+      defaultId: 0,
+      cancelId: 0,
+    });
   }
 }
 

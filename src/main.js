@@ -749,6 +749,22 @@ ipcMain.handle('audit:exportCSV', async (_, csvContent) => {
   return { ok: true, path: filePath };
 });
 
+// ── Native dialog helper ──────────────────────────────────
+ipcMain.handle('dialog:confirm', async (_, opts) => {
+  const result = await dialog.showMessageBox(mainWindow, {
+    type:          'warning',
+    title:         opts.title   || 'Confirm',
+    message:       opts.message || 'Are you sure?',
+    detail:        opts.detail  || '',
+    buttons:       opts.buttons || ['Cancel', 'OK'],
+    defaultId:     opts.defaultId ?? 0,
+    cancelId:      opts.cancelId  ?? 0,
+    noLink:        true,
+  });
+  // Return true if user picked anything other than the cancel button
+  return result.response !== (opts.cancelId ?? 0);
+});
+
 // ── Database reset (fresh install) ────────────────────────
 ipcMain.handle('database:reset', () => {
   if (!db) return false;

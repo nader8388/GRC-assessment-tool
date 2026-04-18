@@ -56,6 +56,7 @@ contextBridge.exposeInMainWorld('api', {
 
   // Database management
   databaseReset:        ()                    => ipcRenderer.invoke('database:reset'),
+  confirmDialog:        (opts)               => ipcRenderer.invoke('dialog:confirm', opts),
 
   // App
   appInfo:              ()                    => ipcRenderer.invoke('app:info'),
