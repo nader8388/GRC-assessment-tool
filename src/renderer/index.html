@@ -397,7 +397,7 @@ header *{-webkit-app-region:no-drag;}
     <button class="auth-btn" onclick="authSubmit()">Sign In</button>
     <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);text-align:center">
       <span style="font-size:11px;color:var(--muted)">First time here? Ask your administrator for an account.</span><br>
-      <a onclick="showDatabaseResetConfirm()" style="font-size:11px;color:var(--muted);cursor:pointer;text-decoration:underline;margin-top:4px;display:inline-block">Reset database (fresh install)</a>
+      <button id="db-reset-btn" style="background:none;border:none;font-size:11px;color:var(--muted);cursor:pointer;text-decoration:underline;margin-top:4px;font-family:var(--sans);padding:0">Reset database (fresh install)</button>
     </div>
   </div>
   <!-- First-run setup -->
@@ -2545,6 +2545,17 @@ function jumpToCtrlFromAudit(stdId, ctrlId) {
     if(el) el.scrollIntoView({behavior:'smooth',block:'nearest'});
   },100);
 }
+
+// Attach reset button listener (can't use inline onclick with contextIsolation)
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('db-reset-btn');
+  if (btn) btn.addEventListener('click', showDatabaseResetConfirm);
+});
+// Also attach immediately in case DOM is already ready
+(function() {
+  const btn = document.getElementById('db-reset-btn');
+  if (btn) btn.addEventListener('click', showDatabaseResetConfirm);
+})();
 
 bootAuth();
 </script>
