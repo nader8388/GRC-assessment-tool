@@ -63,8 +63,12 @@ jobs:
       - name: Build installer
         run: npm run build:nsis
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN:                    ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
+          # Repo info for electron-updater's app-update.yml embedded in the installer
+          # electron-builder reads GITHUB_REPOSITORY automatically (owner/repo format)
+          EP_DRAFT:                    false
+          EP_PRE_RELEASE:              false
 
       - name: Verify output
         shell: pwsh

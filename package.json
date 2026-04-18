@@ -60,11 +60,6 @@
       "deleteAppDataOnUninstall": false,
       "include": "build/installer.nsh"
     },
-    "publish": {
-      "provider": "github",
-      "owner": "nader8388",
-      "repo": "GRC-assessment-tool"
-    },
     "compression": "maximum",
     "removePackageScripts": true,
     "forceCodeSigning": false
