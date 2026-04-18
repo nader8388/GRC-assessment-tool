@@ -176,7 +176,11 @@ function createWindow() {
   });
 
   mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
-  mainWindow.once('ready-to-show', () => { mainWindow.show(); mainWindow.focus(); });
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
+    mainWindow.focus();
+    mainWindow.webContents.openDevTools();
+  });
   mainWindow.on('closed', () => { mainWindow = null; });
   if (app.isPackaged) mainWindow.setMenu(null);
 }
