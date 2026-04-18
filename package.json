@@ -62,8 +62,8 @@
     },
     "publish": {
       "provider": "github",
-      "owner": "YOUR_GITHUB_USERNAME",
-      "repo": "YOUR_REPO_NAME"
+      "owner": "nades8388",
+      "repo": "GRC-assessment-tool"
     },
     "compression": "maximum",
     "removePackageScripts": true,
