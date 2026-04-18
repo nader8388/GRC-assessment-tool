@@ -62,7 +62,7 @@
     },
     "publish": {
       "provider": "github",
-      "owner": "nades8388",
+      "owner": "nader8388",
       "repo": "GRC-assessment-tool"
     },
     "compression": "maximum",
