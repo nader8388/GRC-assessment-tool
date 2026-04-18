@@ -1,8 +1,10 @@
 'use strict';
 
 const { app, BrowserWindow, ipcMain, dialog, shell, safeStorage, nativeTheme } = require('electron');
-const path = require('path');
-const fs   = require('fs');
+const { autoUpdater } = require('electron-updater');
+const path   = require('path');
+const fs     = require('fs');
+const crypto = require('crypto');
 
 nativeTheme.themeSource = 'dark';
 
@@ -85,6 +87,25 @@ function initDB() {
 
       CREATE INDEX IF NOT EXISTS idx_evidence_ctrl ON evidence(std_id, ctrl_id);
 
+      CREATE TABLE IF NOT EXISTS users (
+        id                   TEXT PRIMARY KEY,
+        name                 TEXT NOT NULL,
+        username             TEXT NOT NULL UNIQUE,
+        role                 TEXT NOT NULL DEFAULT 'assessor',
+        password_hash        TEXT NOT NULL,
+        salt                 TEXT NOT NULL,
+        color                TEXT NOT NULL DEFAULT '',
+        created              TEXT NOT NULL,
+        last_login           TEXT,
+        must_change_password INTEGER NOT NULL DEFAULT 0
+      );
+
+      CREATE TABLE IF NOT EXISTS sessions (
+        id         INTEGER PRIMARY KEY,
+        user_id    TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS attachments (
         id       INTEGER PRIMARY KEY AUTOINCREMENT,
         std_id   TEXT NOT NULL,
@@ -160,9 +181,111 @@ function createWindow() {
   if (app.isPackaged) mainWindow.setMenu(null);
 }
 
-app.whenReady().then(() => { initDB(); createWindow(); });
-app.on('window-all-closed', () => { if (db) { try { db.close(); } catch(e) {} } app.quit(); });
+app.whenReady().then(() => {
+  initDB();
+  createWindow();
+  setupAutoUpdater();
+});
+app.on('window-all-closed', () => {
+  if (db) {
+    try { db.prepare('DELETE FROM sessions').run(); } catch(e) {}
+    try { db.close(); } catch(e) {}
+  }
+  app.quit();
+});
 app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
+
+// ════════════════════════════════════════════════════════
+//  AUTO-UPDATER
+// ════════════════════════════════════════════════════════
+function setupAutoUpdater() {
+  // Only run in packaged app — skip in dev mode
+  if (!app.isPackaged) {
+    console.log('[Updater] Skipping auto-update check in development mode');
+    return;
+  }
+
+  // Configure logging
+  autoUpdater.logger = require('electron-log');
+  autoUpdater.logger.transports.file.level = 'info';
+
+  // Don't auto-download — let user confirm first
+  autoUpdater.autoDownload    = false;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  // ── Events ─────────────────────────────────────────
+  autoUpdater.on('checking-for-update', () => {
+    sendUpdateStatus('checking');
+  });
+
+  autoUpdater.on('update-available', (info) => {
+    sendUpdateStatus('available', {
+      version:      info.version,
+      releaseDate:  info.releaseDate,
+      releaseNotes: info.releaseNotes || '',
+    });
+  });
+
+  autoUpdater.on('update-not-available', () => {
+    sendUpdateStatus('not-available');
+  });
+
+  autoUpdater.on('download-progress', (progress) => {
+    sendUpdateStatus('downloading', {
+      percent:       Math.round(progress.percent),
+      transferred:   formatBytes(progress.transferred),
+      total:         formatBytes(progress.total),
+      bytesPerSecond:formatBytes(progress.bytesPerSecond) + '/s',
+    });
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    sendUpdateStatus('downloaded', { version: info.version });
+  });
+
+  autoUpdater.on('error', (err) => {
+    // Don't surface network errors to the user — just log them
+    console.error('[Updater] Error:', err.message);
+    sendUpdateStatus('error', { message: err.message });
+  });
+
+  // Check for updates 5 seconds after launch (let the app fully load first)
+  setTimeout(() => {
+    autoUpdater.checkForUpdates().catch(err => {
+      console.error('[Updater] Check failed:', err.message);
+    });
+  }, 5000);
+}
+
+function sendUpdateStatus(status, data) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('update:status', { status, ...data });
+  }
+}
+
+function formatBytes(bytes) {
+  if (!bytes) return '0 B';
+  if (bytes < 1024)     return bytes + ' B';
+  if (bytes < 1048576)  return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+// ── Update IPC handlers ────────────────────────────────
+ipcMain.handle('update:download', () => {
+  if (!app.isPackaged) return { ok: false, reason: 'dev' };
+  autoUpdater.downloadUpdate();
+  return { ok: true };
+});
+
+ipcMain.handle('update:install', () => {
+  autoUpdater.quitAndInstall(false, true);
+});
+
+ipcMain.handle('update:check', () => {
+  if (!app.isPackaged) return { ok: false, reason: 'dev' };
+  autoUpdater.checkForUpdates().catch(() => {});
+  return { ok: true };
+});
 
 // ════════════════════════════════════════════════════════
 //  IPC HANDLERS
@@ -394,6 +517,82 @@ ipcMain.handle('app:info', () => ({
 
 ipcMain.handle('shell:openPath',  (_, p) => shell.openPath(p));
 ipcMain.handle('shell:showItem',  (_, p) => shell.showItemInFolder(p));
+
+// ── Users ─────────────────────────────────────────────────
+ipcMain.handle('user:count', () => {
+  if (!db) return 0;
+  return db.prepare('SELECT COUNT(*) as c FROM users').get().c;
+});
+
+ipcMain.handle('user:list', () => {
+  if (!db) return [];
+  return db.prepare('SELECT * FROM users ORDER BY name').all();
+});
+
+ipcMain.handle('user:getByUsername', (_, username) => {
+  if (!db) return null;
+  return db.prepare('SELECT * FROM users WHERE username=?').get(username.toLowerCase()) || null;
+});
+
+ipcMain.handle('user:getById', (_, id) => {
+  if (!db) return null;
+  return db.prepare('SELECT * FROM users WHERE id=?').get(id) || null;
+});
+
+ipcMain.handle('user:create', (_, { name, username, role, salt, passwordHash, color, mustChange }) => {
+  if (!db) return null;
+  const id = crypto.randomUUID();
+  db.prepare(`INSERT INTO users (id,name,username,role,password_hash,salt,color,created,must_change_password)
+    VALUES (?,?,?,?,?,?,?,?,?)`).run(
+      id, name, username.toLowerCase(), role, passwordHash, salt,
+      color||'', new Date().toISOString(), mustChange ? 1 : 0
+    );
+  return db.prepare('SELECT * FROM users WHERE id=?').get(id);
+});
+
+ipcMain.handle('user:updatePassword', (_, id, salt, passwordHash) => {
+  if (!db) return false;
+  db.prepare('UPDATE users SET salt=?, password_hash=?, must_change_password=0 WHERE id=?').run(salt, passwordHash, id);
+  return true;
+});
+
+ipcMain.handle('user:updateLastLogin', (_, id) => {
+  if (!db) return false;
+  db.prepare('UPDATE users SET last_login=? WHERE id=?').run(new Date().toISOString(), id);
+  return true;
+});
+
+ipcMain.handle('user:delete', (_, id) => {
+  if (!db) return false;
+  // Prevent deleting the last admin
+  const adminCount = db.prepare("SELECT COUNT(*) as c FROM users WHERE role='admin'").get().c;
+  const user = db.prepare('SELECT role FROM users WHERE id=?').get(id);
+  if (user?.role === 'admin' && adminCount <= 1) return false;
+  db.prepare('DELETE FROM users WHERE id=?').run(id);
+  db.prepare('DELETE FROM sessions WHERE user_id=?').run(id);
+  return true;
+});
+
+// ── Sessions ────────────────────────────────────────────
+ipcMain.handle('session:set', (_, userId) => {
+  if (!db) return false;
+  db.prepare('DELETE FROM sessions').run();  // single active session
+  db.prepare('INSERT INTO sessions (user_id, created_at) VALUES (?,?)').run(userId, new Date().toISOString());
+  return true;
+});
+
+ipcMain.handle('session:get', () => {
+  if (!db) return null;
+  const row = db.prepare('SELECT user_id FROM sessions ORDER BY created_at DESC LIMIT 1').get();
+  if (!row) return null;
+  return db.prepare('SELECT * FROM users WHERE id=?').get(row.user_id) || null;
+});
+
+ipcMain.handle('session:clear', () => {
+  if (!db) return false;
+  db.prepare('DELETE FROM sessions').run();
+  return true;
+});
 
 // ── File Attachments ──────────────────────────────────────
 // Files are copied into userData/attachments/<stdId>/<ctrlId>/

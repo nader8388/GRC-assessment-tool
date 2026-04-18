@@ -60,14 +60,20 @@
       "deleteAppDataOnUninstall": false,
       "include": "build/installer.nsh"
     },
-    "publish": null,
+    "publish": {
+      "provider": "github",
+      "owner": "YOUR_GITHUB_USERNAME",
+      "repo": "YOUR_REPO_NAME"
+    },
     "compression": "maximum",
     "removePackageScripts": true,
     "forceCodeSigning": false
   },
   "dependencies": {
     "better-sqlite3": "9.4.3",
-    "xlsx": "0.18.5"
+    "xlsx": "0.18.5",
+    "electron-updater": "6.3.9",
+    "electron-log": "5.2.0"
   },
   "devDependencies": {
     "@electron/rebuild": "^3.6.0",

@@ -158,6 +158,13 @@ header *{-webkit-app-region:no-drag;}
 .save-bar{padding:12px 26px;border-top:1px solid var(--border);background:var(--bg);display:flex;justify-content:flex-end;align-items:center;gap:8px;flex-shrink:0;}
 .saved-msg{font-size:12px;color:var(--green);opacity:0;transition:opacity .3s;margin-right:auto;}
 .saved-msg.show{opacity:1;}
+.autosave-indicator{font-size:11px;color:var(--muted);margin-right:auto;display:flex;align-items:center;gap:6px;transition:opacity .3s;opacity:0;}
+.autosave-indicator.dirty{opacity:1;color:var(--muted);}
+.autosave-indicator.saving{opacity:1;color:var(--accent);}
+.autosave-indicator.saved{opacity:1;color:var(--green);}
+.autosave-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0;}
+.autosave-dot.pulse{animation:pulse 1s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
 
 /* ── AI Panel ── */
 .ai-panel{background:var(--bg);border:1px solid var(--border);border-radius:10px;margin-top:20px;overflow:hidden;transition:border-color .2s;}
@@ -252,6 +259,51 @@ header *{-webkit-app-region:no-drag;}
 .toast.show{transform:translateY(0);opacity:1;}
 .toast.ok{border-color:var(--green);}
 .toast.err{border-color:var(--red);}
+/* ── AUTH SCREEN ── */
+.auth-overlay{position:fixed;inset:0;background:var(--bg);z-index:500;display:flex;align-items:center;justify-content:center;}
+.auth-overlay.gone{display:none;}
+.auth-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;width:min(420px,92vw);padding:36px 32px;box-shadow:0 24px 64px rgba(0,0,0,.5);}
+.auth-logo{font-size:11px;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;}
+.auth-title{font-size:22px;font-weight:700;margin-bottom:4px;}
+.auth-sub{font-size:13px;color:var(--muted);margin-bottom:28px;line-height:1.5;}
+.auth-field{display:flex;flex-direction:column;gap:5px;margin-bottom:16px;}
+.auth-field label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);}
+.auth-input{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 13px;border-radius:8px;font-size:14px;font-family:var(--sans);outline:none;transition:border-color .15s;width:100%;box-sizing:border-box;}
+.auth-input:focus{border-color:var(--accent);}
+.auth-input::placeholder{color:var(--muted);}
+.auth-btn{width:100%;background:var(--accent);border:none;color:#0d1117;padding:11px;border-radius:8px;font-size:14px;font-weight:700;font-family:var(--sans);cursor:pointer;margin-top:6px;transition:opacity .15s;}
+.auth-btn:hover{opacity:.88;}
+.auth-err{font-size:12px;color:var(--red);margin-top:8px;min-height:18px;}
+.auth-strength{height:4px;border-radius:99px;margin-top:5px;transition:all .2s;}
+.auth-strength-lbl{font-size:10px;color:var(--muted);margin-top:3px;}
+.user-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;color:#0d1117;}
+.user-pill{display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--border);border-radius:99px;padding:3px 12px 3px 4px;cursor:pointer;transition:border-color .15s;font-size:12px;}
+.user-pill:hover{border-color:var(--accent);}
+.user-pill-name{color:var(--text);font-weight:500;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.users-list{display:flex;flex-direction:column;gap:8px;}
+.user-row{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;}
+.user-row-info{flex:1;min-width:0;}
+.user-row-name{font-size:13px;font-weight:600;}
+.user-row-meta{font-size:11px;color:var(--muted);margin-top:1px;}
+.user-role-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;text-transform:uppercase;letter-spacing:.5px;}
+.role-admin{background:rgba(88,166,255,.15);color:#58a6ff;}
+.role-assessor{background:rgba(63,185,80,.15);color:#3fb950;}
+.role-viewer{background:rgba(125,133,144,.15);color:#7d8590;}
+.user-actions{display:flex;gap:6px;}
+/* ── UPDATE BANNER ── */
+.update-banner{display:none;align-items:center;gap:10px;padding:8px 20px;font-size:12px;flex-shrink:0;border-bottom:1px solid var(--border);}
+.update-banner.show{display:flex;}
+.update-banner.available{background:rgba(88,166,255,.08);border-bottom-color:rgba(88,166,255,.3);}
+.update-banner.downloading{background:rgba(63,185,80,.06);border-bottom-color:rgba(63,185,80,.2);}
+.update-banner.downloaded{background:rgba(63,185,80,.1);border-bottom-color:rgba(63,185,80,.4);}
+.update-banner.error{background:rgba(248,81,73,.06);border-bottom-color:rgba(248,81,73,.2);}
+.update-banner-icon{font-size:14px;flex-shrink:0;}
+.update-banner-msg{flex:1;color:var(--text);}
+.update-banner-msg strong{font-weight:600;}
+.update-progress{width:160px;height:4px;background:var(--border);border-radius:99px;overflow:hidden;flex-shrink:0;}
+.update-progress-bar{height:100%;background:var(--green);border-radius:99px;transition:width .3s;}
+.update-dismiss{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:2px 6px;border-radius:4px;font-family:var(--sans);flex-shrink:0;}
+.update-dismiss:hover{color:var(--text);}
 .hidden{display:none!important;}
 
 /* ── AUDIT LOG ── */
@@ -304,10 +356,10 @@ header *{-webkit-app-region:no-drag;}
 <header>
   <div class="logo">GRC<span> // </span>PLATFORM</div>
   <div class="header-mid">
-    <div class="active-badge hidden" id="active-badge" onclick="backToPicker()">
+    <div class="active-badge hidden" id="active-badge" onclick="backToPicker()" id="active-badge">
       <div class="ab-dot" id="ab-dot"></div>
       <span class="ab-name" id="ab-name"></span>
-      <span class="ab-change">↩ change</span>
+      <span class="ab-change" id="ab-change-lbl">↩ change</span>
     </div>
   </div>
   <div class="hdr-right" id="hdr-actions" style="display:none">
@@ -319,8 +371,106 @@ header *{-webkit-app-region:no-drag;}
     <button class="btn" onclick="doExportJSON()">↓ Backup</button>
     <button class="btn btn-primary" onclick="switchTab('export')">▶ Export</button>
   </div>
+  <div class="user-pill" id="user-pill" onclick="openSettings()" style="display:none" title="Logged in user">
+    <div class="user-avatar" id="user-avatar"></div>
+    <span class="user-pill-name" id="user-pill-name"></span>
+  </div>
   <button class="btn btn-settings" onclick="openSettings()" title="Settings — API Key &amp; Preferences" style="margin-left:8px">⚙ Settings</button>
 </header>
+
+<!-- ══ AUTH OVERLAY ══ -->
+<div class="auth-overlay" id="auth-overlay">
+  <!-- Login -->
+  <div class="auth-box" id="auth-login-box">
+    <div class="auth-logo">GRC // PLATFORM</div>
+    <div class="auth-title">Sign In</div>
+    <div class="auth-sub">Enter your credentials to access the assessment platform.</div>
+    <div class="auth-field">
+      <label>Username</label>
+      <input class="auth-input" id="auth-username" type="text" placeholder="username" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('auth-password').focus()">
+    </div>
+    <div class="auth-field">
+      <label>Password</label>
+      <input class="auth-input" id="auth-password" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')authSubmit()">
+    </div>
+    <div class="auth-err" id="auth-err"></div>
+    <button class="auth-btn" onclick="authSubmit()">Sign In</button>
+  </div>
+  <!-- First-run setup -->
+  <div class="auth-box" id="auth-setup-box" style="display:none">
+    <div class="auth-logo">GRC // PLATFORM</div>
+    <div class="auth-title">Create Admin Account</div>
+    <div class="auth-sub">First launch — create an administrator account to get started.</div>
+    <div class="auth-field">
+      <label>Full Name</label>
+      <input class="auth-input" id="setup-name" type="text" placeholder="e.g. Jane Smith" onkeydown="if(event.key==='Enter')document.getElementById('setup-username').focus()">
+    </div>
+    <div class="auth-field">
+      <label>Username</label>
+      <input class="auth-input" id="setup-username" type="text" placeholder="e.g. jsmith" onkeydown="if(event.key==='Enter')document.getElementById('setup-password').focus()">
+    </div>
+    <div class="auth-field">
+      <label>Password</label>
+      <input class="auth-input" id="setup-password" type="password" placeholder="Min 8 characters" oninput="checkSetupStrength()" onkeydown="if(event.key==='Enter')document.getElementById('setup-confirm').focus()">
+      <div class="auth-strength" id="setup-strength-bar"></div>
+      <div class="auth-strength-lbl" id="setup-strength-lbl"></div>
+    </div>
+    <div class="auth-field">
+      <label>Confirm Password</label>
+      <input class="auth-input" id="setup-confirm" type="password" placeholder="Re-enter password" onkeydown="if(event.key==='Enter')setupSubmit()">
+    </div>
+    <div class="auth-err" id="setup-err"></div>
+    <button class="auth-btn" onclick="setupSubmit()">Create Account &amp; Get Started</button>
+  </div>
+</div>
+
+<!-- ══ ADD USER MODAL ══ -->
+<div class="settings-overlay hidden" id="add-user-overlay" onclick="if(event.target===this)closeAddUserModal()">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:min(420px,92vw);box-shadow:0 24px 64px rgba(0,0,0,.6);overflow:hidden">
+    <div style="display:flex;align-items:center;padding:16px 22px;border-bottom:1px solid var(--border)">
+      <div style="font-size:15px;font-weight:600;flex:1">Add New User</div>
+      <button style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:4px 8px;border-radius:5px;font-family:var(--sans)" onclick="closeAddUserModal()">✕</button>
+    </div>
+    <div style="padding:24px">
+      <div class="auth-field"><label>Full Name</label><input class="auth-input" id="nu-name" type="text" placeholder="e.g. John Smith"></div>
+      <div class="auth-field"><label>Username</label><input class="auth-input" id="nu-username" type="text" placeholder="e.g. jsmith"></div>
+      <div class="auth-field">
+        <label>Role</label>
+        <select class="f-sel" id="nu-role" style="width:100%">
+          <option value="assessor">Assessor — can assess controls</option>
+          <option value="admin">Admin — can manage users</option>
+          <option value="viewer">Viewer — read only</option>
+        </select>
+      </div>
+      <div class="auth-field">
+        <label>Password</label>
+        <input class="auth-input" id="nu-password" type="password" placeholder="Min 8 characters" oninput="checkNewUserStrength()">
+        <div class="auth-strength" id="nu-strength-bar"></div>
+        <div class="auth-strength-lbl" id="nu-strength-lbl"></div>
+      </div>
+      <div class="auth-field"><label>Confirm Password</label><input class="auth-input" id="nu-confirm" type="password" placeholder="Re-enter"></div>
+      <div class="auth-err" id="nu-err"></div>
+      <button class="auth-btn" onclick="saveNewUser()">Create User</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ RESET PASSWORD MODAL ══ -->
+<div class="settings-overlay hidden" id="reset-pw-overlay" onclick="if(event.target===this)closeResetPwModal()">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:min(400px,92vw);box-shadow:0 24px 64px rgba(0,0,0,.6);overflow:hidden">
+    <div style="display:flex;align-items:center;padding:16px 22px;border-bottom:1px solid var(--border)">
+      <div style="font-size:15px;font-weight:600;flex:1">Reset Password</div>
+      <button style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:4px 8px;border-radius:5px;font-family:var(--sans)" onclick="closeResetPwModal()">✕</button>
+    </div>
+    <div style="padding:24px">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:16px">Resetting password for: <strong id="reset-pw-username" style="color:var(--text)"></strong></div>
+      <div class="auth-field"><label>New Password</label><input class="auth-input" id="reset-pw-new" type="password" placeholder="Min 8 characters" oninput="checkResetStrength()"><div class="auth-strength" id="reset-strength-bar"></div></div>
+      <div class="auth-field"><label>Confirm Password</label><input class="auth-input" id="reset-pw-confirm" type="password" placeholder="Re-enter"></div>
+      <div class="auth-err" id="reset-pw-err"></div>
+      <button class="auth-btn" onclick="saveResetPassword()">Reset Password</button>
+    </div>
+  </div>
+</div>
 
 <!-- ══ AUDIT LOG MODAL ══ -->
 <div class="audit-overlay" id="audit-overlay" onclick="closeAuditLogOverlay(event)">
@@ -375,6 +525,17 @@ header *{-webkit-app-region:no-drag;}
 
 <div class="app-body">
 
+<!-- ══ UPDATE BANNER ══ -->
+<div class="update-banner" id="update-banner">
+  <span class="update-banner-icon" id="update-icon">⬆</span>
+  <span class="update-banner-msg" id="update-msg"></span>
+  <div class="update-progress" id="update-progress" style="display:none">
+    <div class="update-progress-bar" id="update-progress-bar" style="width:0%"></div>
+  </div>
+  <button class="btn btn-primary" id="update-action-btn" style="display:none;font-size:12px;padding:5px 12px" onclick="handleUpdateAction()"></button>
+  <button class="update-dismiss" id="update-dismiss-btn" onclick="dismissUpdateBanner()" title="Dismiss">✕</button>
+</div>
+
 <!-- ══ PICKER ══ -->
 <div id="picker-screen">
   <div class="picker-inner">
@@ -414,7 +575,11 @@ header *{-webkit-app-region:no-drag;}
       <div id="detail-panel" class="hidden" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
         <div class="detail-wrap" id="detail-content"></div>
         <div class="save-bar">
-          <div class="saved-msg" id="saved-msg">✓ Saved to database</div>
+          <div class="autosave-indicator" id="autosave-indicator">
+            <span class="autosave-dot" id="autosave-dot"></span>
+            <span id="autosave-lbl">Unsaved changes</span>
+          </div>
+          <div class="saved-msg" id="saved-msg">✓ Saved</div>
           <button class="btn btn-danger" onclick="clearCtrl()">Clear</button>
           <button class="btn btn-primary" onclick="saveCtrl()">Save &amp; Next ↵</button>
         </div>
@@ -465,10 +630,15 @@ header *{-webkit-app-region:no-drag;}
             <button class="btn" onclick="doImport()">↑ Restore from Backup</button>
           </div>
         </div>
-        <div class="exp-card">
+        <div class="exp-card" id="reset-card">
           <div class="exp-title" style="color:var(--red)">⚠ Reset This Assessment</div>
           <div class="exp-desc" style="color:rgba(248,81,73,.75)">Clears all data for the active standard only. Other standards and their data are not affected.</div>
           <button class="btn btn-danger" onclick="confirmReset()">Clear Assessment Data</button>
+        </div>
+        <div class="exp-card" id="admin-delete-card" style="display:none">
+          <div class="exp-title" style="color:var(--red)">🔐 Admin: Delete Standard &amp; Return to Picker</div>
+          <div class="exp-desc" style="color:rgba(248,81,73,.75)">Permanently deletes ALL assessment data for this standard and returns to the standard picker. Only administrators can perform this action.</div>
+          <button class="btn btn-danger" onclick="adminDeleteStandard()">Delete Standard Data &amp; Exit</button>
         </div>
         <div class="exp-card">
           <div class="exp-title" style="font-size:13px;font-weight:400;color:var(--muted)">ℹ Database Location</div>
@@ -524,12 +694,45 @@ header *{-webkit-app-region:no-drag;}
           </div>
         </div>
 
+        <div class="settings-card" id="user-profile-card">
+          <div class="settings-title">👤 Account</div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+            <div class="user-avatar" id="settings-user-avatar" style="width:40px;height:40px;font-size:15px"></div>
+            <div style="flex:1">
+              <div style="font-size:14px;font-weight:600" id="settings-user-name">—</div>
+              <div style="font-size:11px;color:var(--muted)" id="settings-user-meta">—</div>
+            </div>
+            <button class="btn btn-danger" onclick="logoutUser()" style="font-size:12px;padding:5px 12px">Sign Out</button>
+          </div>
+          <div class="settings-title" style="font-size:13px;margin-top:4px">Change My Password</div>
+          <div style="display:flex;flex-direction:column;gap:8px;max-width:340px;margin-top:8px">
+            <input class="auth-input" id="chpw-current" type="password" placeholder="Current password">
+            <input class="auth-input" id="chpw-new" type="password" placeholder="New password (min 8 chars)" oninput="checkChangePwStrength()">
+            <div class="auth-strength" id="chpw-strength-bar"></div>
+            <input class="auth-input" id="chpw-confirm" type="password" placeholder="Confirm new password">
+            <div class="auth-err" id="chpw-err"></div>
+            <button class="btn btn-primary" onclick="changeMyPassword()" style="align-self:flex-start">Update Password</button>
+          </div>
+        </div>
+
+        <div class="settings-card" id="admin-users-card" style="display:none">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+            <div class="settings-title" style="margin-bottom:0">👥 All Users</div>
+            <button class="btn btn-primary" onclick="openAddUserModal()" style="font-size:12px;padding:5px 12px">+ Add User</button>
+          </div>
+          <div class="users-list" id="users-list"></div>
+        </div>
+
         <div class="settings-card">
           <div class="settings-title">ℹ About</div>
-          <div class="info-row">
+          <div class="info-row" style="margin-bottom:14px">
             <strong>GRC Assessment Platform</strong><br>
-            Version: <span id="app-version">—</span><br>
-            Multi-standard compliance assessment tool supporting ISO 27001:2022, FedRAMP Moderate, SOC 2, NIST CSF 2.0, PCI DSS v4.0, and HIPAA Security Rule.
+            Version: <span id="app-version">—</span>
+            <span id="update-version-badge" style="display:none;margin-left:8px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:rgba(88,166,255,.15);color:#58a6ff"></span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button class="btn" onclick="checkForUpdatesManual()" id="check-updates-btn" style="font-size:12px;padding:5px 12px">⬆ Check for Updates</button>
+            <span id="update-check-status" style="font-size:12px;color:var(--muted)"></span>
           </div>
         </div>
       </div>
@@ -539,6 +742,45 @@ header *{-webkit-app-region:no-drag;}
 </div>
 
 </div>
+<!-- ══ FORCE PASSWORD CHANGE MODAL ══ -->
+<div class="settings-overlay" id="force-pw-overlay" style="display:none">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:min(420px,92vw);box-shadow:0 24px 64px rgba(0,0,0,.6);overflow:hidden">
+    <div style="padding:28px 28px 0">
+      <div style="font-size:18px;font-weight:700;margin-bottom:6px">🔒 Password Change Required</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.5">Your account requires a password change before you can continue. Please choose a new password.</div>
+    </div>
+    <div style="padding:0 28px 28px">
+      <div class="auth-field">
+        <label>New Password</label>
+        <input class="auth-input" id="force-pw-new" type="password" placeholder="Min 8 characters" oninput="checkForcePwStrength()">
+        <div class="auth-strength" id="force-strength-bar"></div>
+        <div class="auth-strength-lbl" id="force-strength-lbl"></div>
+      </div>
+      <div class="auth-field">
+        <label>Confirm Password</label>
+        <input class="auth-input" id="force-pw-confirm" type="password" placeholder="Re-enter password" onkeydown="if(event.key==='Enter')submitForcePwChange()">
+      </div>
+      <div class="auth-err" id="force-pw-err"></div>
+      <button class="auth-btn" onclick="submitForcePwChange()">Set New Password &amp; Continue</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SESSION EXPIRED OVERLAY ══ -->
+<div class="auth-overlay gone" id="session-expired-overlay">
+  <div class="auth-box" style="text-align:center">
+    <div style="font-size:36px;margin-bottom:12px">⏱</div>
+    <div class="auth-title">Session Expired</div>
+    <div class="auth-sub">Your session has expired due to inactivity. Please sign in again to continue.</div>
+    <div class="auth-field" style="text-align:left">
+      <label>Password</label>
+      <input class="auth-input" id="reauth-password" type="password" placeholder="Enter your password" onkeydown="if(event.key==='Enter')reauthSubmit()">
+    </div>
+    <div class="auth-err" id="reauth-err"></div>
+    <button class="auth-btn" onclick="reauthSubmit()">Sign In Again</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="../controls-data.js"></script>
@@ -692,13 +934,53 @@ async function launchStandard() {
   renderList();
   buildDashboard();
   switchTab('assessment');
+  startAutoSave();
+
+  // Update badge label and admin delete card visibility
+  const changeLbl = document.getElementById('ab-change-lbl');
+  if (changeLbl) {
+    if (currentUser && currentUser.role === 'admin') {
+      changeLbl.textContent = '↩ change';
+      changeLbl.title = 'Return to standard picker';
+    } else {
+      changeLbl.textContent = '🔒';
+      changeLbl.title = 'Only admins can change the active standard';
+    }
+  }
+  const adminCard = document.getElementById('admin-delete-card');
+  if (adminCard) adminCard.style.display = currentUser?.role === 'admin' ? '' : 'none';
 }
 
 async function backToPicker() {
+  // Non-admins cannot change the active standard
+  if (currentUser && currentUser.role !== 'admin') {
+    toast('Only admins can change the active standard.', 'err');
+    return;
+  }
+  stopAutoSave();
   document.getElementById('picker-screen').style.display = 'flex';
   document.getElementById('main-app').style.display = 'none';
   document.getElementById('active-badge').classList.add('hidden');
   document.getElementById('hdr-actions').style.display = 'none';
+  activeStd = null;
+  await buildPicker();
+}
+
+async function adminDeleteStandard() {
+  if (!activeStd) return;
+  if (currentUser?.role !== 'admin') { toast('Only admins can delete assessment data.', 'err'); return; }
+  const label = activeStd.label;
+  if (!confirm(`ADMIN ACTION: Permanently delete ALL assessment data for "${label}"?\n\nThis will erase all control assessments, evidence, notes, and metadata for this standard.\n\nThis cannot be undone.`)) return;
+  await window.api.clearAll(activeStd.id);
+  assessData = {}; metaData = {};
+  selectedId = null;
+  toast(`${label} assessment data deleted.`, 'ok');
+  // Return to picker
+  document.getElementById('picker-screen').style.display = 'flex';
+  document.getElementById('main-app').style.display = 'none';
+  document.getElementById('active-badge').classList.add('hidden');
+  document.getElementById('hdr-actions').style.display = 'none';
+  activeStd = null;
   await buildPicker();
 }
 
@@ -778,7 +1060,11 @@ function renderList() {
 // ════════════════════════════════════════════════════════
 //  CONTROL DETAIL
 // ════════════════════════════════════════════════════════
-function selectCtrl(id) {
+async function selectCtrl(id) {
+  // If switching away from a dirty control, auto-save it first
+  if (selectedId && selectedId !== id && isDirty) {
+    await autoSaveCtrl();
+  }
   selectedId = id;
   aiResult   = null;
   renderList();
@@ -875,7 +1161,7 @@ function selectCtrl(id) {
     </div>
     <div class="fl">
       <label class="fl-lbl">Assessor Initials</label>
-      <input class="f-in" id="f-assessor" placeholder="e.g. JS" value="${esc(d.assessor||(metaData.assessor?(metaData.assessor.split(' ').map(w=>w[0]).join('')):''))}">
+      <input class="f-in" id="f-assessor" placeholder="e.g. JS" value="${esc(d.assessor || getAssessorValue() || (metaData.assessor?(metaData.assessor.split(' ').map(w=>w[0]).join('')):''))}">
     </div>
 
     <div class="ai-panel" id="ai-panel">
@@ -912,6 +1198,9 @@ function selectCtrl(id) {
   document.getElementById('detail-content').closest('.detail-wrap').scrollTo(0,0);
   renderEvList();
   renderAttachmentsList();
+  // Auto-save: take a clean snapshot of the freshly loaded form
+  markClean();
+  attachDirtyListeners();
 }
 
 function onStatusChange(val) {
@@ -1049,15 +1338,33 @@ async function saveCtrl() {
   const data = gatherForm();
   await window.api.save(activeStd.id, selectedId, data);
   assessData[selectedId] = data;
+  markClean();
   addAuditEntry(selectedId, prevData, data, 'saved');
   renderList();
   const msg = document.getElementById('saved-msg');
   msg.classList.add('show');
   setTimeout(()=>msg.classList.remove('show'),2000);
-  toast(selectedId+' saved.','ok');
+  // Advance to next control
   const filtered = getFiltered();
   const idx = filtered.findIndex(c=>c.id===selectedId);
   if (idx<filtered.length-1) selectCtrl(filtered[idx+1].id);
+}
+
+// Silent auto-save — no toast, no advance, just persists
+async function autoSaveCtrl() {
+  if (!selectedId || !activeStd || !isDirty) return;
+  const prevData = assessData[selectedId] || {};
+  const data = gatherForm();
+  try {
+    await window.api.save(activeStd.id, selectedId, data);
+    assessData[selectedId] = data;
+    markClean();
+    addAuditEntry(selectedId, prevData, data, 'saved');
+    renderList();
+    showAutoSaveSaved();
+  } catch(e) {
+    console.error('Auto-save failed:', e);
+  }
 }
 
 async function clearCtrl() {
@@ -1307,6 +1614,118 @@ async function confirmReset() {
 }
 
 // ════════════════════════════════════════════════════════
+//  AUTO-SAVE ENGINE
+// ════════════════════════════════════════════════════════
+const AUTOSAVE_INTERVAL_MS = 60 * 1000;  // 60 seconds
+let autoSaveTimer = null;
+let isDirty       = false;
+let dirtySnapshot = null;  // JSON snapshot of form state when last marked clean
+
+// ── Dirty tracking ────────────────────────────────────
+function getFormSnapshot() {
+  // Lightweight JSON snapshot of current form fields
+  try {
+    const status = document.querySelector('input[name="ctrl-status"]:checked');
+    return JSON.stringify({
+      status:  status?.value || '',
+      notes:   document.getElementById('f-notes')?.value || '',
+      finding: document.getElementById('f-finding')?.value || '',
+      rec:     document.getElementById('f-rec')?.value || '',
+      risk:    document.getElementById('f-risk')?.value || '',
+      remdate: document.getElementById('f-remdate')?.value || '',
+    });
+  } catch(e) { return ''; }
+}
+
+function markClean() {
+  isDirty        = false;
+  dirtySnapshot  = getFormSnapshot();
+  hideAutoSaveIndicator();
+}
+
+function checkDirty() {
+  if (!selectedId) return;
+  const current = getFormSnapshot();
+  if (current !== dirtySnapshot) {
+    if (!isDirty) {
+      isDirty = true;
+      showAutoSaveDirty();
+    }
+  }
+}
+
+// ── Auto-save indicator states ────────────────────────
+function hideAutoSaveIndicator() {
+  const el = document.getElementById('autosave-indicator');
+  const dot = document.getElementById('autosave-dot');
+  if (!el) return;
+  el.className = 'autosave-indicator';
+  if (dot) dot.classList.remove('pulse');
+}
+
+function showAutoSaveDirty() {
+  const el  = document.getElementById('autosave-indicator');
+  const dot = document.getElementById('autosave-dot');
+  const lbl = document.getElementById('autosave-lbl');
+  if (!el) return;
+  el.className = 'autosave-indicator dirty';
+  if (dot) dot.classList.remove('pulse');
+  if (lbl) lbl.textContent = 'Unsaved changes';
+}
+
+function showAutoSaveSaving() {
+  const el  = document.getElementById('autosave-indicator');
+  const dot = document.getElementById('autosave-dot');
+  const lbl = document.getElementById('autosave-lbl');
+  if (!el) return;
+  el.className = 'autosave-indicator saving';
+  if (dot) dot.classList.add('pulse');
+  if (lbl) lbl.textContent = 'Auto-saving…';
+}
+
+function showAutoSaveSaved() {
+  const el  = document.getElementById('autosave-indicator');
+  const dot = document.getElementById('autosave-dot');
+  const lbl = document.getElementById('autosave-lbl');
+  if (!el) return;
+  el.className = 'autosave-indicator saved';
+  if (dot) dot.classList.remove('pulse');
+  if (lbl) lbl.textContent = '✓ Auto-saved';
+  setTimeout(() => hideAutoSaveIndicator(), 3000);
+}
+
+// ── Timer management ──────────────────────────────────
+function startAutoSave() {
+  stopAutoSave();
+  autoSaveTimer = setInterval(async () => {
+    if (!isDirty || !selectedId || !activeStd) return;
+    showAutoSaveSaving();
+    await autoSaveCtrl();
+  }, AUTOSAVE_INTERVAL_MS);
+}
+
+function stopAutoSave() {
+  if (autoSaveTimer) { clearInterval(autoSaveTimer); autoSaveTimer = null; }
+  isDirty       = false;
+  dirtySnapshot = null;
+  hideAutoSaveIndicator();
+}
+
+// ── Wire dirty tracking to all form inputs ────────────
+// Called after selectCtrl renders the form
+function attachDirtyListeners() {
+  const ids = ['f-notes','f-finding','f-rec','f-risk','f-remdate','f-assessor','ai-input'];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', checkDirty, { passive:true });
+  });
+  // Radio buttons for status
+  document.querySelectorAll('input[name="ctrl-status"]').forEach(r => {
+    r.addEventListener('change', checkDirty, { passive:true });
+  });
+}
+
+// ════════════════════════════════════════════════════════
 //  UTILS
 // ════════════════════════════════════════════════════════
 function toast(msg,type) {
@@ -1319,6 +1738,566 @@ document.addEventListener('keydown',e=>{
   if(e.ctrlKey&&e.key==='Enter'&&selectedId) saveCtrl();
   if(e.key==='Escape') closeAuditLog();
 });
+
+// ════════════════════════════════════════════════════════
+//  AUTO-UPDATER UI
+// ════════════════════════════════════════════════════════
+let currentUpdateStatus = null;
+let updateReadyVersion  = null;
+
+// Receive status pushes from main process
+window.electronAPI?.onUpdateStatus(handleUpdateStatus);
+
+function handleUpdateStatus(data) {
+  currentUpdateStatus = data.status;
+
+  const banner      = document.getElementById('update-banner');
+  const icon        = document.getElementById('update-icon');
+  const msg         = document.getElementById('update-msg');
+  const progress    = document.getElementById('update-progress');
+  const progressBar = document.getElementById('update-progress-bar');
+  const actionBtn   = document.getElementById('update-action-btn');
+  const checkStatus = document.getElementById('update-check-status');
+
+  if (!banner) return;
+
+  // Reset classes
+  banner.className = 'update-banner';
+  progress.style.display = 'none';
+  actionBtn.style.display = 'none';
+
+  switch (data.status) {
+
+    case 'checking':
+      if (checkStatus) checkStatus.textContent = 'Checking for updates…';
+      return;  // No banner for checking
+
+    case 'not-available':
+      if (checkStatus) checkStatus.textContent = '✓ You are on the latest version';
+      setTimeout(() => { if (checkStatus) checkStatus.textContent = ''; }, 4000);
+      return;  // No banner
+
+    case 'available':
+      updateReadyVersion = data.version;
+      banner.classList.add('show', 'available');
+      icon.textContent = '⬆';
+      msg.innerHTML = `<strong>Update available: v${data.version}</strong> — Click to download in the background.`;
+      actionBtn.style.display = '';
+      actionBtn.textContent   = 'Download';
+      if (checkStatus) checkStatus.textContent = `Update available: v${data.version}`;
+      // Show version badge in settings
+      const badge = document.getElementById('update-version-badge');
+      if (badge) { badge.textContent = `v${data.version} available`; badge.style.display = ''; }
+      break;
+
+    case 'downloading':
+      banner.classList.add('show', 'downloading');
+      icon.textContent = '⬇';
+      msg.innerHTML = `Downloading update… <span style="color:var(--muted)">${data.percent}% · ${data.transferred} / ${data.total} · ${data.bytesPerSecond}</span>`;
+      progress.style.display = '';
+      progressBar.style.width = data.percent + '%';
+      break;
+
+    case 'downloaded':
+      updateReadyVersion = data.version;
+      banner.classList.add('show', 'downloaded');
+      icon.textContent = '✓';
+      msg.innerHTML = `<strong>Update ready: v${data.version}</strong> — Restart to install.`;
+      progress.style.display = 'none';
+      actionBtn.style.display = '';
+      actionBtn.textContent   = 'Restart & Install';
+      if (checkStatus) {
+        checkStatus.textContent = '';
+        checkStatus.innerHTML = `v${data.version} ready — <a onclick="handleUpdateAction()" style="color:var(--accent);cursor:pointer;text-decoration:underline">Restart & Install</a>`;
+      }
+      // Update the check button too
+      const checkBtn = document.getElementById('check-updates-btn');
+      if (checkBtn) { checkBtn.textContent = '✓ Restart & Install'; checkBtn.onclick = handleUpdateAction; }
+      break;
+
+    case 'error':
+      // Only show banner if user manually triggered a check
+      if (checkStatus) checkStatus.textContent = 'Update check failed — check your internet connection';
+      setTimeout(() => { if (checkStatus) checkStatus.textContent = ''; }, 5000);
+      return;
+  }
+}
+
+async function handleUpdateAction() {
+  if (currentUpdateStatus === 'available') {
+    // Start download
+    await window.api.updateDownload();
+    const actionBtn = document.getElementById('update-action-btn');
+    if (actionBtn) actionBtn.style.display = 'none';
+  } else if (currentUpdateStatus === 'downloaded') {
+    // Confirm restart
+    if (confirm('Restart GRC Assessment Platform to install the update?
+
+Any unsaved work will be saved automatically first.')) {
+      // Flush any pending auto-save
+      if (typeof isDirty !== 'undefined' && isDirty && selectedId) {
+        await autoSaveCtrl();
+      }
+      await window.api.updateInstall();
+    }
+  }
+}
+
+function dismissUpdateBanner() {
+  const banner = document.getElementById('update-banner');
+  if (banner) banner.classList.remove('show');
+}
+
+async function checkForUpdatesManual() {
+  const btn = document.getElementById('check-updates-btn');
+  const status = document.getElementById('update-check-status');
+  if (btn) { btn.disabled = true; btn.textContent = 'Checking…'; }
+  if (status) status.textContent = 'Checking…';
+  await window.api.updateCheck();
+  // Re-enable after 3 seconds
+  setTimeout(() => {
+    if (btn) { btn.disabled = false; btn.textContent = '⬆ Check for Updates'; }
+  }, 3000);
+}
+
+// ════════════════════════════════════════════════════════
+//  AUTH & USER MANAGEMENT (SQLite-backed via IPC)
+// ════════════════════════════════════════════════════════
+let currentUser = null;
+
+// Password hashing via Web Crypto (same as web version)
+async function hashPassword(password, salt) {
+  const enc = new TextEncoder();
+  const buf = await crypto.subtle.digest('SHA-256', enc.encode(salt + password + salt));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+function makeSalt() {
+  return Array.from(crypto.getRandomValues(new Uint8Array(16)))
+    .map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+function makeInitials(name) {
+  return name.trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
+}
+
+function makeAvatarColor(username) {
+  let h=0; for(const c of username) h=(h*31+c.charCodeAt(0))&0xffff;
+  const cols=['#58a6ff','#3fb950','#d29922','#e3813b','#f85149','#a371f7','#06b6d4','#ec4899','#ff7b72','#ffa657'];
+  return cols[h % cols.length];
+}
+
+function getAssessorValue() {
+  return currentUser ? makeInitials(currentUser.name) : '';
+}
+
+// ── Auth boot ─────────────────────────────────────────
+async function bootAuth() {
+  // Load app info first so DB is ready
+  appInfo = await window.api.appInfo();
+  apiKey  = await window.api.getApiKey();
+
+  const userCount = await window.api.userCount();
+
+  if (userCount === 0) {
+    showSetupScreen();
+    return;
+  }
+
+  // Try to restore session from DB
+  const sessionUser = await window.api.sessionGet();
+  if (sessionUser) {
+    currentUser = sessionUser;
+    enterApp();
+    return;
+  }
+
+  showLoginScreen();
+}
+
+function showLoginScreen() {
+  document.getElementById('auth-login-box').style.display = '';
+  document.getElementById('auth-setup-box').style.display = 'none';
+  document.getElementById('auth-overlay').classList.remove('gone');
+  setTimeout(()=>document.getElementById('auth-username').focus(), 100);
+}
+
+function showSetupScreen() {
+  document.getElementById('auth-login-box').style.display = 'none';
+  document.getElementById('auth-setup-box').style.display = '';
+  document.getElementById('auth-overlay').classList.remove('gone');
+  setTimeout(()=>document.getElementById('setup-name').focus(), 100);
+}
+
+function enterApp() {
+  // Check if user must change password before continuing
+  if (currentUser && currentUser.must_change_password) {
+    showForcePwChange();
+    return;
+  }
+  document.getElementById('auth-overlay').classList.add('gone');
+  document.getElementById('session-expired-overlay').classList.add('gone');
+  updateUserPill();
+  startInactivityTimer();
+  buildPicker();
+  window.api.auditCount().then(n=>updateAuditBadge(n)).catch(()=>{});
+  const kInput = document.getElementById('api-key-input');
+  if (kInput && apiKey) kInput.value = apiKey;
+  updateKeyStatus();
+  const vEl = document.getElementById('app-version');
+  if (vEl) vEl.textContent = appInfo.version || '1.0.0';
+  const dbEl = document.getElementById('settings-db-path');
+  if (dbEl) dbEl.textContent = appInfo.dbPath || '';
+}
+
+// ── Login ──────────────────────────────────────────────
+async function authSubmit() {
+  const username = document.getElementById('auth-username').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const errEl    = document.getElementById('auth-err');
+  errEl.textContent = '';
+
+  if (!username || !password) { errEl.textContent = 'Please enter username and password.'; return; }
+
+  const user = await window.api.userGetByUsername(username);
+  if (!user) { errEl.textContent = 'Invalid username or password.'; return; }
+
+  const hash = await hashPassword(password, user.salt);
+  if (hash !== user.password_hash) { errEl.textContent = 'Invalid username or password.'; return; }
+
+  await window.api.userUpdateLastLogin(user.id);
+  await window.api.sessionSet(user.id);
+  currentUser = user;
+  enterApp();
+}
+
+// ── First-run setup ────────────────────────────────────
+async function setupSubmit() {
+  const name     = document.getElementById('setup-name').value.trim();
+  const username = document.getElementById('setup-username').value.trim().toLowerCase();
+  const password = document.getElementById('setup-password').value;
+  const confirm  = document.getElementById('setup-confirm').value;
+  const errEl    = document.getElementById('setup-err');
+  errEl.textContent = '';
+
+  if (!name)           { errEl.textContent = 'Enter your full name.'; return; }
+  if (!username)       { errEl.textContent = 'Choose a username.'; return; }
+  if (!/^[a-zA-Z0-9_.\-]+$/.test(username)) { errEl.textContent = 'Username: letters, numbers, . _ - only.'; return; }
+  if (password.length < 8)  { errEl.textContent = 'Password must be at least 8 characters.'; return; }
+  if (password !== confirm) { errEl.textContent = 'Passwords do not match.'; return; }
+
+  const salt = makeSalt();
+  const hash = await hashPassword(password, salt);
+  const user = await window.api.userCreate({ name, username, role:'admin', salt, passwordHash:hash, color:makeAvatarColor(username) });
+
+  await window.api.sessionSet(user.id);
+  currentUser = user;
+  enterApp();
+}
+
+// ── Logout ─────────────────────────────────────────────
+async function logoutUser() {
+  if (!confirm('Sign out of GRC Assessment Platform?')) return;
+  // Save any pending changes before signing out
+  if (isDirty && selectedId) await autoSaveCtrl();
+  stopAutoSave();
+  await window.api.sessionClear();
+  currentUser = null;
+  document.getElementById('user-pill').style.display = 'none';
+  document.getElementById('hdr-actions').style.display = 'none';
+  // Reset to picker
+  document.getElementById('picker-screen').style.display = '';
+  document.getElementById('main-app').style.display = 'none';
+  activeStd = null; assessData = {}; metaData = {}; selectedId = null;
+  showLoginScreen();
+}
+
+// ── User pill ──────────────────────────────────────────
+function updateUserPill() {
+  if (!currentUser) return;
+  const pill   = document.getElementById('user-pill');
+  const avatar = document.getElementById('user-avatar');
+  const name   = document.getElementById('user-pill-name');
+  if (!pill) return;
+  avatar.textContent = makeInitials(currentUser.name);
+  avatar.style.background = currentUser.color || makeAvatarColor(currentUser.username);
+  name.textContent = currentUser.name;
+  pill.style.display = 'flex';
+  // Settings panel
+  const sa = document.getElementById('settings-user-avatar');
+  const sn = document.getElementById('settings-user-name');
+  const sm = document.getElementById('settings-user-meta');
+  if (sa) { sa.textContent = makeInitials(currentUser.name); sa.style.background = currentUser.color || makeAvatarColor(currentUser.username); }
+  if (sn) sn.textContent = currentUser.name;
+  if (sm) sm.textContent = `@${currentUser.username} · ${currentUser.role}`;
+  const adminCard = document.getElementById('admin-users-card');
+  if (adminCard) adminCard.style.display = currentUser.role === 'admin' ? '' : 'none';
+}
+
+// ── Render users list (admin) ──────────────────────────
+async function renderUsersList() {
+  const list = document.getElementById('users-list');
+  if (!list) return;
+  const users = await window.api.userList();
+  list.innerHTML = users.map(u => {
+    const isSelf = currentUser && u.id === currentUser.id;
+    const lastLogin = u.last_login ? new Date(u.last_login).toLocaleDateString() : 'Never';
+    const color = u.color || makeAvatarColor(u.username);
+    return `<div class="user-row">
+      <div class="user-avatar" style="background:${color};width:36px;height:36px;font-size:13px">${makeInitials(u.name)}</div>
+      <div class="user-row-info">
+        <div class="user-row-name">${esc(u.name)} ${isSelf?'<span style="font-size:10px;color:var(--muted)">(you)</span>':''}</div>
+        <div class="user-row-meta">@${esc(u.username)} · Last login: ${lastLogin}</div>
+      </div>
+      <span class="user-role-badge role-${u.role}">${u.role}</span>
+      <div class="user-actions">
+        <button class="btn" onclick="openResetPwModal('${u.id}')" style="font-size:11px;padding:4px 10px">🔑 Reset</button>
+        ${!isSelf && currentUser?.role==='admin'
+          ? `<button class="btn btn-danger" onclick="deleteUser('${u.id}')" style="font-size:11px;padding:4px 10px">✕</button>`
+          : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Add user ───────────────────────────────────────────
+function openAddUserModal() {
+  ['nu-name','nu-username','nu-password','nu-confirm'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('nu-err').textContent = '';
+  document.getElementById('nu-strength-bar').style.background = '';
+  document.getElementById('nu-strength-lbl').textContent = '';
+  document.getElementById('add-user-overlay').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('nu-name').focus(), 100);
+}
+
+function closeAddUserModal() { document.getElementById('add-user-overlay').classList.add('hidden'); }
+
+async function saveNewUser() {
+  const name     = document.getElementById('nu-name').value.trim();
+  const username = document.getElementById('nu-username').value.trim().toLowerCase();
+  const role     = document.getElementById('nu-role').value;
+  const password = document.getElementById('nu-password').value;
+  const confirm  = document.getElementById('nu-confirm').value;
+  const errEl    = document.getElementById('nu-err');
+  errEl.textContent = '';
+
+  if (!name)     { errEl.textContent = 'Enter full name.'; return; }
+  if (!username) { errEl.textContent = 'Enter a username.'; return; }
+  if (!/^[a-zA-Z0-9_.\-]+$/.test(username)) { errEl.textContent = 'Username: letters, numbers, . _ - only.'; return; }
+  if (password.length < 8)  { errEl.textContent = 'Password must be at least 8 characters.'; return; }
+  if (password !== confirm)  { errEl.textContent = 'Passwords do not match.'; return; }
+
+  const existing = await window.api.userGetByUsername(username);
+  if (existing) { errEl.textContent = 'That username is already taken.'; return; }
+
+  const salt = makeSalt();
+  const hash = await hashPassword(password, salt);
+  // Admin-created accounts must change password on first login
+  await window.api.userCreate({ name, username, role, salt, passwordHash:hash, color:makeAvatarColor(username), mustChange:true });
+  closeAddUserModal();
+  renderUsersList();
+  toast(`User ${name} created. They will be prompted to change their password on first login.`, 'ok');
+}
+
+// ── Reset password modal ───────────────────────────────
+let resetPwTargetId = null;
+
+async function openResetPwModal(userId) {
+  const user = await window.api.userGetById(userId);
+  if (!user) return;
+  resetPwTargetId = userId;
+  document.getElementById('reset-pw-username').textContent = `${user.name} (@${user.username})`;
+  ['reset-pw-new','reset-pw-confirm'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('reset-pw-err').textContent = '';
+  document.getElementById('reset-strength-bar').style.background = '';
+  document.getElementById('reset-pw-overlay').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('reset-pw-new').focus(), 100);
+}
+
+function closeResetPwModal() {
+  document.getElementById('reset-pw-overlay').classList.add('hidden');
+  resetPwTargetId = null;
+}
+
+async function saveResetPassword() {
+  const newPw   = document.getElementById('reset-pw-new').value;
+  const confirm = document.getElementById('reset-pw-confirm').value;
+  const errEl   = document.getElementById('reset-pw-err');
+  errEl.textContent = '';
+  if (newPw.length < 8)  { errEl.textContent = 'Password must be at least 8 characters.'; return; }
+  if (newPw !== confirm)  { errEl.textContent = 'Passwords do not match.'; return; }
+  const salt = makeSalt();
+  const hash = await hashPassword(newPw, salt);
+  await window.api.userUpdatePassword(resetPwTargetId, salt, hash);
+  closeResetPwModal();
+  toast('Password reset successfully.', 'ok');
+}
+
+// ── Change own password ────────────────────────────────
+async function changeMyPassword() {
+  const current = document.getElementById('chpw-current').value;
+  const newPw   = document.getElementById('chpw-new').value;
+  const confirm = document.getElementById('chpw-confirm').value;
+  const errEl   = document.getElementById('chpw-err');
+  errEl.textContent = '';
+  if (!currentUser) return;
+  const user = await window.api.userGetById(currentUser.id);
+  if (!user) return;
+  const currentHash = await hashPassword(current, user.salt);
+  if (currentHash !== user.password_hash) { errEl.textContent = 'Current password is incorrect.'; return; }
+  if (newPw.length < 8)  { errEl.textContent = 'New password must be at least 8 characters.'; return; }
+  if (newPw !== confirm)  { errEl.textContent = 'Passwords do not match.'; return; }
+  const salt = makeSalt();
+  const hash = await hashPassword(newPw, salt);
+  await window.api.userUpdatePassword(currentUser.id, salt, hash);
+  ['chpw-current','chpw-new','chpw-confirm'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('chpw-strength-bar').style.background = '';
+  toast('Password changed successfully.', 'ok');
+}
+
+// ── Delete user ────────────────────────────────────────
+async function deleteUser(userId) {
+  const user = await window.api.userGetById(userId);
+  if (!user) return;
+  if (!confirm(`Delete user "${user.name}" (@${user.username})? This cannot be undone.`)) return;
+  const ok = await window.api.userDelete(userId);
+  if (!ok) { toast('Cannot delete the last admin account.', 'err'); return; }
+  renderUsersList();
+  toast(`User ${user.name} deleted.`, 'ok');
+}
+
+// ── Password strength ──────────────────────────────────
+function passwordStrength(pw) {
+  let s=0;
+  if(pw.length>=8) s++; if(pw.length>=12) s++;
+  if(/[A-Z]/.test(pw)) s++; if(/[0-9]/.test(pw)) s++; if(/[^A-Za-z0-9]/.test(pw)) s++;
+  return s;
+}
+function applyStrengthBar(score, barId, lblId) {
+  const cols=['','var(--red)','var(--orange)','var(--yellow)','var(--green)','var(--green)'];
+  const lbls=['','Weak','Fair','Good','Strong','Very strong'];
+  const bar=document.getElementById(barId); const lbl=document.getElementById(lblId);
+  if(bar){ bar.style.background=cols[score]||''; bar.style.width=(score*20)+'%'; }
+  if(lbl){ lbl.textContent=lbls[score]||''; lbl.style.color=cols[score]||'var(--muted)'; }
+}
+function checkSetupStrength()    { applyStrengthBar(passwordStrength(document.getElementById('setup-password').value), 'setup-strength-bar','setup-strength-lbl'); }
+function checkNewUserStrength()  { applyStrengthBar(passwordStrength(document.getElementById('nu-password').value),    'nu-strength-bar',   'nu-strength-lbl'); }
+function checkResetStrength()    { applyStrengthBar(passwordStrength(document.getElementById('reset-pw-new').value),   'reset-strength-bar', null); }
+function checkChangePwStrength() { applyStrengthBar(passwordStrength(document.getElementById('chpw-new').value),       'chpw-strength-bar',  null); }
+
+// Refresh users list when settings opens
+const _origOpenSettings = openSettings;
+openSettings = function() {
+  _origOpenSettings();
+  updateUserPill();
+  if (currentUser?.role === 'admin') renderUsersList();
+};
+
+// ── Force password change (admin-created accounts) ─────────────
+function showForcePwChange() {
+  document.getElementById('auth-overlay').classList.add('gone');
+  document.getElementById('force-pw-overlay').style.display = 'flex';
+  document.getElementById('force-pw-new').value    = '';
+  document.getElementById('force-pw-confirm').value= '';
+  document.getElementById('force-pw-err').textContent = '';
+  document.getElementById('force-strength-bar').style.background = '';
+  document.getElementById('force-strength-lbl').textContent = '';
+  setTimeout(()=>document.getElementById('force-pw-new').focus(), 100);
+}
+
+async function submitForcePwChange() {
+  const newPw   = document.getElementById('force-pw-new').value;
+  const confirm = document.getElementById('force-pw-confirm').value;
+  const errEl   = document.getElementById('force-pw-err');
+  errEl.textContent = '';
+
+  if (newPw.length < 8)  { errEl.textContent = 'Password must be at least 8 characters.'; return; }
+  if (newPw !== confirm)  { errEl.textContent = 'Passwords do not match.'; return; }
+
+  const salt = makeSalt();
+  const hash = await hashPassword(newPw, salt);
+  // updatePassword also clears must_change_password=0 in DB
+  await window.api.userUpdatePassword(currentUser.id, salt, hash);
+  currentUser.must_change_password = 0;
+  document.getElementById('force-pw-overlay').style.display = 'none';
+
+  // Continue into the app normally
+  document.getElementById('auth-overlay').classList.add('gone');
+  document.getElementById('session-expired-overlay').classList.add('gone');
+  updateUserPill();
+  startInactivityTimer();
+  buildPicker();
+  window.api.auditCount().then(n=>updateAuditBadge(n)).catch(()=>{});
+  const kInput = document.getElementById('api-key-input');
+  if (kInput && apiKey) kInput.value = apiKey;
+  updateKeyStatus();
+  const vEl = document.getElementById('app-version');
+  if (vEl) vEl.textContent = appInfo.version || '1.0.0';
+  const dbEl = document.getElementById('settings-db-path');
+  if (dbEl) dbEl.textContent = appInfo.dbPath || '';
+  toast('Password changed. Welcome!', 'ok');
+}
+
+function checkForcePwStrength() {
+  applyStrengthBar(passwordStrength(document.getElementById('force-pw-new').value), 'force-strength-bar','force-strength-lbl');
+}
+
+// ── Inactivity timeout (60 minutes) ────────────────────────────
+const INACTIVITY_MS = 60 * 60 * 1000;  // 60 minutes
+let inactivityTimer = null;
+
+function resetInactivityTimer() {
+  if (!currentUser) return;
+  clearTimeout(inactivityTimer);
+  inactivityTimer = setTimeout(sessionExpired, INACTIVITY_MS);
+}
+
+function startInactivityTimer() {
+  // Reset on any user interaction
+  const events = ['mousedown','keydown','mousemove','touchstart','wheel','click'];
+  events.forEach(ev => document.addEventListener(ev, resetInactivityTimer, { passive: true }));
+  resetInactivityTimer();
+}
+
+function stopInactivityTimer() {
+  clearTimeout(inactivityTimer);
+  inactivityTimer = null;
+}
+
+async function sessionExpired() {
+  if (!currentUser) return;
+  stopInactivityTimer();
+  // Clear the DB session so a full restart also requires login
+  await window.api.sessionClear();
+  // Show the re-auth overlay (keep app state intact so user can continue where they left off)
+  document.getElementById('reauth-password').value = '';
+  document.getElementById('reauth-err').textContent = '';
+  document.getElementById('session-expired-overlay').classList.remove('gone');
+  setTimeout(()=>document.getElementById('reauth-password').focus(), 100);
+}
+
+async function reauthSubmit() {
+  const password = document.getElementById('reauth-password').value;
+  const errEl    = document.getElementById('reauth-err');
+  errEl.textContent = '';
+  if (!password) { errEl.textContent = 'Enter your password to continue.'; return; }
+
+  // Re-fetch user from DB to get latest password hash
+  const user = await window.api.userGetById(currentUser.id);
+  if (!user) { errEl.textContent = 'Account not found. Please sign in again.'; logoutUser(); return; }
+
+  const hash = await hashPassword(password, user.salt);
+  if (hash !== user.password_hash) { errEl.textContent = 'Incorrect password.'; return; }
+
+  // Re-establish session
+  await window.api.userUpdateLastLogin(user.id);
+  await window.api.sessionSet(user.id);
+  currentUser = user;
+
+  document.getElementById('session-expired-overlay').classList.add('gone');
+  startInactivityTimer();
+  toast('Session restored. Welcome back.', 'ok');
+}
 
 // ════════════════════════════════════════════════════════
 //  AUDIT LOG — SQLite-backed via IPC, persists across sessions
@@ -1356,7 +2335,7 @@ async function addAuditEntry(ctrlId, prevData, newData, action) {
   }
   if (changes.length===0 && action!=='cleared') return;
 
-  const assessor = newData.assessor||metaData.assessor||'';
+  const assessor = newData.assessor || getAssessorValue() || metaData.assessor || '';
   const now      = new Date();
   const entries  = changes.map((c,i)=>({
     ts:        now.toISOString(),
@@ -1530,7 +2509,7 @@ function jumpToCtrlFromAudit(stdId, ctrlId) {
   },100);
 }
 
-boot();
+bootAuth();
 </script>
 </body>
 </html>
