@@ -55,8 +55,9 @@ contextBridge.exposeInMainWorld('api', {
   updateCheck:          ()                    => ipcRenderer.invoke('update:check'),
 
   // Database management
-  databaseReset:        ()                    => ipcRenderer.invoke('database:reset'),
-  confirmDialog:        (opts)               => ipcRenderer.invoke('dialog:confirm', opts),
+  databaseReset:            ()      => ipcRenderer.invoke('database:reset'),
+  databaseResetWithConfirm: ()      => ipcRenderer.invoke('database:resetWithConfirm'),
+  confirmDialog:            (opts)  => ipcRenderer.invoke('dialog:confirm', opts),
 
   // App
   appInfo:              ()                    => ipcRenderer.invoke('app:info'),

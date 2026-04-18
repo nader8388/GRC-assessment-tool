@@ -1927,25 +1927,12 @@ function showLoginScreen() {
 }
 
 async function showDatabaseResetConfirm() {
-  console.log('[Reset] Button clicked, calling confirmDialog...');
+  // Single IPC call — main.js shows the dialog AND does the reset if confirmed
   try {
-    const confirmed = await window.api.confirmDialog({
-      title:     'Reset Database',
-      message:   'This will permanently delete ALL data including all user accounts, assessments, audit logs and settings. The app will reload to the account creation screen.',
-      detail:    'This cannot be undone.',
-      buttons:   ['Cancel', 'Reset Everything'],
-      defaultId: 0,
-      cancelId:  0,
-    });
-
-    console.log('[Reset] Dialog result:', confirmed);
-    if (!confirmed) return;
-
-    console.log('[Reset] Calling databaseReset...');
-    const result = await window.api.databaseReset();
-    console.log('[Reset] Reset result:', result);
-    location.reload();
-
+    const result = await window.api.databaseResetWithConfirm();
+    if (result === true) {
+      location.reload();
+    }
   } catch(e) {
     console.error('[Reset] Error:', e);
   }

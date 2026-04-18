@@ -779,4 +779,33 @@ ipcMain.handle('database:reset', () => {
   return true;
 });
 
+// Combined: shows native dialog in main process, resets if confirmed
+// Avoids any renderer-side dialog IPC issues at the login screen
+ipcMain.handle('database:resetWithConfirm', async () => {
+  const result = await dialog.showMessageBox({
+    type:      'warning',
+    title:     'Reset Database',
+    message:   'Permanently delete ALL data?',
+    detail:    'This will delete all user accounts, assessments, audit logs, and settings.\n\nThe app will reload to the account creation screen.\n\nThis cannot be undone.',
+    buttons:   ['Cancel', 'Reset Everything'],
+    defaultId: 0,
+    cancelId:  0,
+    noLink:    true,
+  });
+
+  if (result.response !== 1) return false;
+
+  if (db) {
+    db.prepare('DELETE FROM sessions').run();
+    db.prepare('DELETE FROM users').run();
+    db.prepare('DELETE FROM assessments').run();
+    db.prepare('DELETE FROM evidence').run();
+    db.prepare('DELETE FROM meta').run();
+    db.prepare('DELETE FROM audit_log').run();
+    db.prepare('DELETE FROM attachments').run();
+    db.prepare('DELETE FROM settings').run();
+  }
+  return true;
+});
+
 function dateStr() { return new Date().toISOString().slice(0, 10); }
