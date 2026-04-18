@@ -1835,9 +1835,7 @@ async function handleUpdateAction() {
     if (actionBtn) actionBtn.style.display = 'none';
   } else if (currentUpdateStatus === 'downloaded') {
     // Confirm restart
-    if (confirm('Restart GRC Assessment Platform to install the update?
-
-Any unsaved work will be saved automatically first.')) {
+    if (confirm('Restart GRC Assessment Platform to install the update?\n\nAny unsaved work will be saved automatically first.')) {
       // Flush any pending auto-save
       if (typeof isDirty !== 'undefined' && isDirty && selectedId) {
         await autoSaveCtrl();
@@ -2494,8 +2492,7 @@ async function exportAuditLog() {
       e.ts_display||e.ts, e.std_label, e.ctrl_id, e.ctrl_name,
       e.field, e.from_val, e.to_val, e.status, e.assessor, e.notes_preview
     ].map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(','))
-  ].join('
-');
+  ].join('\n');
   const result = await window.api.auditExportCSV(csv);
   if (result.ok) toast('Audit log saved to CSV.','ok');
 }
