@@ -11,8 +11,7 @@
 html,body{height:100%;overflow:hidden;}
 body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;display:flex;flex-direction:column;}
 
-header{height:52px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:12px;flex-shrink:0;z-index:100;-webkit-app-region:drag;}
-header *{-webkit-app-region:no-drag;}
+header{height:52px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:12px;flex-shrink:0;z-index:100;}
 .logo{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent);letter-spacing:2px;white-space:nowrap;}
 .logo span{color:var(--muted);}
 .header-mid{flex:1;display:flex;align-items:center;gap:8px;}
@@ -260,9 +259,10 @@ header *{-webkit-app-region:no-drag;}
 .toast.ok{border-color:var(--green);}
 .toast.err{border-color:var(--red);}
 /* ── AUTH SCREEN ── */
-.auth-overlay{position:fixed;inset:0;background:var(--bg);z-index:500;display:flex;align-items:center;justify-content:center;}
+.auth-overlay{position:fixed;inset:0;background:var(--bg);z-index:500;display:flex;align-items:center;justify-content:center;-webkit-app-region:no-drag;}
 .auth-overlay.gone{display:none;}
-.auth-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;width:min(420px,92vw);padding:36px 32px;box-shadow:0 24px 64px rgba(0,0,0,.5);}
+.auth-overlay *{-webkit-app-region:no-drag;}
+.auth-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;width:min(420px,92vw);padding:36px 32px;box-shadow:0 24px 64px rgba(0,0,0,.5);-webkit-app-region:no-drag;}
 .auth-logo{font-size:11px;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;}
 .auth-title{font-size:22px;font-weight:700;margin-bottom:4px;}
 .auth-sub{font-size:13px;color:var(--muted);margin-bottom:28px;line-height:1.5;}
@@ -747,7 +747,7 @@ header *{-webkit-app-region:no-drag;}
 
 </div>
 <!-- ══ FORCE PASSWORD CHANGE MODAL ══ -->
-<div class="settings-overlay" id="force-pw-overlay" style="display:none">
+<div class="settings-overlay" id="force-pw-overlay" style="display:none;-webkit-app-region:no-drag">
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:min(420px,92vw);box-shadow:0 24px 64px rgba(0,0,0,.6);overflow:hidden">
     <div style="padding:28px 28px 0">
       <div style="font-size:18px;font-weight:700;margin-bottom:6px">🔒 Password Change Required</div>
