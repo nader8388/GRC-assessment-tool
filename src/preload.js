@@ -54,6 +54,9 @@ contextBridge.exposeInMainWorld('api', {
   updateInstall:        ()                    => ipcRenderer.invoke('update:install'),
   updateCheck:          ()                    => ipcRenderer.invoke('update:check'),
 
+  // Database management
+  databaseReset:        ()                    => ipcRenderer.invoke('database:reset'),
+
   // App
   appInfo:              ()                    => ipcRenderer.invoke('app:info'),
   openPath:             (p)                   => ipcRenderer.invoke('shell:openPath', p),

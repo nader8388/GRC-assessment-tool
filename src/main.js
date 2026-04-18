@@ -210,8 +210,11 @@ function setupAutoUpdater() {
   autoUpdater.logger.transports.file.level = 'info';
 
   // Don't auto-download — let user confirm first
-  autoUpdater.autoDownload    = false;
+  autoUpdater.autoDownload         = false;
   autoUpdater.autoInstallOnAppQuit = true;
+
+  // electron-builder embeds app-update.yml into the installer with the correct
+  // GitHub repo URL taken from GITHUB_REPOSITORY in CI. No hardcoding needed.
 
   // ── Events ─────────────────────────────────────────
   autoUpdater.on('checking-for-update', () => {
@@ -744,6 +747,20 @@ ipcMain.handle('audit:exportCSV', async (_, csvContent) => {
   if (canceled || !filePath) return { ok: false };
   fs.writeFileSync(filePath, csvContent, 'utf8');
   return { ok: true, path: filePath };
+});
+
+// ── Database reset (fresh install) ────────────────────────
+ipcMain.handle('database:reset', () => {
+  if (!db) return false;
+  db.prepare('DELETE FROM sessions').run();
+  db.prepare('DELETE FROM users').run();
+  db.prepare('DELETE FROM assessments').run();
+  db.prepare('DELETE FROM evidence').run();
+  db.prepare('DELETE FROM meta').run();
+  db.prepare('DELETE FROM audit_log').run();
+  db.prepare('DELETE FROM attachments').run();
+  db.prepare('DELETE FROM settings').run();
+  return true;
 });
 
 function dateStr() { return new Date().toISOString().slice(0, 10); }

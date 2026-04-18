@@ -395,6 +395,10 @@ header *{-webkit-app-region:no-drag;}
     </div>
     <div class="auth-err" id="auth-err"></div>
     <button class="auth-btn" onclick="authSubmit()">Sign In</button>
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);text-align:center">
+      <span style="font-size:11px;color:var(--muted)">First time here? Ask your administrator for an account.</span><br>
+      <a onclick="showDatabaseResetConfirm()" style="font-size:11px;color:var(--muted);cursor:pointer;text-decoration:underline;margin-top:4px;display:inline-block">Reset database (fresh install)</a>
+    </div>
   </div>
   <!-- First-run setup -->
   <div class="auth-box" id="auth-setup-box" style="display:none">
@@ -1920,6 +1924,36 @@ function showLoginScreen() {
   document.getElementById('auth-setup-box').style.display = 'none';
   document.getElementById('auth-overlay').classList.remove('gone');
   setTimeout(()=>document.getElementById('auth-username').focus(), 100);
+}
+
+async function showDatabaseResetConfirm() {
+  const msg = [
+    'RESET DATABASE — Fresh Install',
+    '',
+    'This will permanently delete:',
+    '  - All user accounts',
+    '  - All assessment data',
+    '  - All audit log entries',
+    '  - All settings',
+    '',
+    'The app will restart and show the account creation screen.',
+    '',
+    'Type RESET to confirm:'
+  ].join('\n');
+
+  const input = prompt(msg);
+  if (input !== 'RESET') {
+    if (input !== null) alert('Reset cancelled — you must type RESET exactly.');
+    return;
+  }
+
+  try {
+    await window.api.databaseReset();
+    // Reload the app
+    location.reload();
+  } catch(e) {
+    alert('Reset failed: ' + e.message);
+  }
 }
 
 function showSetupScreen() {
