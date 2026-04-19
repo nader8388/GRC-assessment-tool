@@ -304,6 +304,20 @@ header{height:52px;background:var(--surface);border-bottom:1px solid var(--borde
 .update-progress-bar{height:100%;background:var(--green);border-radius:99px;transition:width .3s;}
 .update-dismiss{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:2px 6px;border-radius:4px;font-family:var(--sans);flex-shrink:0;}
 .update-dismiss:hover{color:var(--text);}
+/* ── MANAGE STANDARDS ── */
+.std-enable-grid{display:flex;flex-direction:column;gap:8px;}
+.std-enable-row{display:flex;align-items:center;gap:12px;padding:11px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;transition:border-color .15s;}
+.std-enable-row.active-std{border-color:rgba(88,166,255,.35);}
+.std-enable-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.std-enable-info{flex:1;min-width:0;}
+.std-enable-name{font-size:13px;font-weight:600;}
+.std-enable-meta{font-size:11px;color:var(--muted);margin-top:1px;}
+.std-enable-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:rgba(63,185,80,.15);color:#3fb950;margin-right:4px;}
+.first-run-overlay{position:fixed;inset:0;background:var(--bg);z-index:600;display:flex;align-items:center;justify-content:center;}
+.first-run-overlay.gone{display:none;}
+.first-run-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;width:min(560px,92vw);padding:36px 32px;box-shadow:0 24px 64px rgba(0,0,0,.5);max-height:90vh;overflow-y:auto;}
+.first-run-box::-webkit-scrollbar{width:4px;}
+.first-run-box::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
 .hidden{display:none!important;}
 
 /* ── AUDIT LOG ── */
@@ -476,6 +490,18 @@ header{height:52px;background:var(--surface);border-bottom:1px solid var(--borde
   </div>
 </div>
 
+<!-- ══ FIRST-RUN: SELECT STANDARDS ══ -->
+<div class="first-run-overlay gone" id="first-run-overlay">
+  <div class="first-run-box">
+    <div class="auth-logo">GRC // PLATFORM</div>
+    <div class="auth-title" style="margin-bottom:6px">Enable Compliance Standards</div>
+    <div class="auth-sub">Choose which standards your team will assess. You can enable or disable standards later from Settings. At least one must be selected.</div>
+    <div class="std-enable-grid" id="first-run-std-grid" style="margin-bottom:20px"></div>
+    <div class="auth-err" id="first-run-err"></div>
+    <button class="auth-btn" onclick="firstRunSubmit()">Launch Assessment Platform →</button>
+  </div>
+</div>
+
 <!-- ══ AUDIT LOG MODAL ══ -->
 <div class="audit-overlay" id="audit-overlay" onclick="closeAuditLogOverlay(event)">
   <div class="audit-modal">
@@ -544,7 +570,7 @@ header{height:52px;background:var(--surface);border-bottom:1px solid var(--borde
 <div id="picker-screen">
   <div class="picker-inner">
     <div class="picker-title">GRC Assessment Platform</div>
-    <div class="picker-sub">Select a compliance standard to begin or continue your assessment. All data is stored locally in a SQLite database on this machine.</div>
+    <div class="picker-sub" id="picker-sub">Select a compliance standard to begin or continue your assessment.</div>
     <div class="standards-grid" id="standards-grid"></div>
     <div class="picker-actions">
       <button class="btn btn-primary" id="launch-btn" onclick="launchStandard()" style="padding:9px 24px;font-size:13px;opacity:.4;cursor:not-allowed">Begin Assessment →</button>
@@ -719,6 +745,14 @@ header{height:52px;background:var(--surface);border-bottom:1px solid var(--borde
           </div>
         </div>
 
+        <div class="settings-card" id="manage-standards-card" style="display:none">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+            <div class="settings-title" style="margin-bottom:0">📋 Active Standards</div>
+          </div>
+          <div class="std-enable-grid" id="settings-std-grid"></div>
+          <div style="margin-top:12px;font-size:11px;color:var(--muted)">Disabling a standard permanently deletes all its assessment data. User accounts and the audit log are preserved.</div>
+        </div>
+
         <div class="settings-card" id="admin-users-card" style="display:none">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
             <div class="settings-title" style="margin-bottom:0">👥 All Users</div>
@@ -880,11 +914,46 @@ async function openDBFolder() {
 // ════════════════════════════════════════════════════════
 //  PICKER
 // ════════════════════════════════════════════════════════
+// ── Active standards management ──────────────────────────
+let activeStandards = []; // IDs of enabled standards
+
+async function loadActiveStandards() {
+  const raw = await window.api.getSetting('active_standards');
+  if (raw) {
+    try { activeStandards = JSON.parse(raw); } catch(e) { activeStandards = []; }
+  } else {
+    activeStandards = [];
+  }
+  return activeStandards;
+}
+
+async function saveActiveStandards(ids) {
+  activeStandards = ids;
+  await window.api.setSetting('active_standards', JSON.stringify(ids));
+}
+
+function getEnabledStandards() {
+  if (!activeStandards.length) return Object.values(STANDARDS);
+  return activeStandards.map(id => STANDARDS[id]).filter(Boolean);
+}
+
 async function buildPicker() {
+  await loadActiveStandards();
+  const enabled = getEnabledStandards();
   const grid = document.getElementById('standards-grid');
   grid.innerHTML = '';
 
-  for (const std of Object.values(STANDARDS)) {
+  // Update subtitle
+  const sub = document.getElementById('picker-sub');
+  if (sub) {
+    if (currentUser?.role === 'admin' && enabled.length < Object.keys(STANDARDS).length) {
+      sub.innerHTML = `Showing ${enabled.length} of ${Object.keys(STANDARDS).length} standards. <a onclick="openSettings()" style="color:var(--accent);cursor:pointer;text-decoration:underline">Manage in Settings →</a>`;
+    } else {
+      sub.textContent = 'Select a compliance standard to begin or continue your assessment.';
+    }
+  }
+
+  for (const std of enabled) {
     const data  = await window.api.getAll(std.id);
     const stats = calcStats(std, data);
     const pct   = Math.round((stats.tested / std.controls.length) * 100);
@@ -940,24 +1009,20 @@ async function launchStandard() {
   switchTab('assessment');
   startAutoSave();
 
-  // Update badge label and admin delete card visibility
+  // Update badge label based on role and number of active standards
   const changeLbl = document.getElementById('ab-change-lbl');
   if (changeLbl) {
-    if (currentUser && currentUser.role === 'admin') {
-      changeLbl.textContent = '↩ change';
-      changeLbl.title = 'Return to standard picker';
-    } else {
-      changeLbl.textContent = '🔒';
-      changeLbl.title = 'Only admins can change the active standard';
-    }
+    const canSwitch = currentUser?.role === 'admin' || activeStandards.length > 1;
+    changeLbl.textContent = canSwitch ? '↩ change' : '🔒';
+    changeLbl.title = canSwitch ? 'Return to standard picker' : 'Only admins can change the active standard';
   }
   const adminCard = document.getElementById('admin-delete-card');
   if (adminCard) adminCard.style.display = currentUser?.role === 'admin' ? '' : 'none';
 }
 
 async function backToPicker() {
-  // Non-admins cannot change the active standard
-  if (currentUser && currentUser.role !== 'admin') {
+  // Non-admins can only go back if multiple standards are enabled
+  if (currentUser && currentUser.role !== 'admin' && activeStandards.length <= 1) {
     toast('Only admins can change the active standard.', 'err');
     return;
   }
@@ -1943,7 +2008,7 @@ function showSetupScreen() {
   setTimeout(()=>document.getElementById('setup-name').focus(), 100);
 }
 
-function enterApp() {
+async function enterApp() {
   // Check if user must change password before continuing
   if (currentUser && currentUser.must_change_password) {
     showForcePwChange();
@@ -1953,7 +2018,6 @@ function enterApp() {
   document.getElementById('session-expired-overlay').classList.add('gone');
   updateUserPill();
   startInactivityTimer();
-  buildPicker();
   window.api.auditCount().then(n=>updateAuditBadge(n)).catch(()=>{});
   const kInput = document.getElementById('api-key-input');
   if (kInput && apiKey) kInput.value = apiKey;
@@ -1962,6 +2026,35 @@ function enterApp() {
   if (vEl) vEl.textContent = appInfo.version || '1.0.0';
   const dbEl = document.getElementById('settings-db-path');
   if (dbEl) dbEl.textContent = appInfo.dbPath || '';
+
+  await loadActiveStandards();
+
+  // First-run: no standards enabled yet — show selection screen (admin only)
+  if (activeStandards.length === 0) {
+    if (currentUser?.role === 'admin') {
+      showFirstRunStandardPicker();
+    } else {
+      // Non-admin on a fresh install — shouldn't happen but handle gracefully
+      showPickerScreen();
+    }
+    return;
+  }
+
+  // Single standard enabled — auto-launch without showing picker
+  if (activeStandards.length === 1) {
+    pickerSel = activeStandards[0];
+    await launchStandard();
+    return;
+  }
+
+  // Multiple standards — show filtered picker
+  showPickerScreen();
+}
+
+function showPickerScreen() {
+  document.getElementById('picker-screen').style.display = 'flex';
+  document.getElementById('main-app').style.display = 'none';
+  buildPicker();
 }
 
 // ── Login ──────────────────────────────────────────────
@@ -2020,7 +2113,7 @@ async function logoutUser() {
   document.getElementById('user-pill').style.display = 'none';
   document.getElementById('hdr-actions').style.display = 'none';
   // Reset to picker
-  document.getElementById('picker-screen').style.display = '';
+  document.getElementById('picker-screen').style.display = 'none';
   document.getElementById('main-app').style.display = 'none';
   activeStd = null; assessData = {}; metaData = {}; selectedId = null;
   showLoginScreen();
@@ -2528,6 +2621,144 @@ function dbResetClick() {
     console.error('Reset error:', e);
   });
 }
+
+// ════════════════════════════════════════════════════════
+//  FIRST-RUN STANDARD SELECTION
+// ════════════════════════════════════════════════════════
+function showFirstRunStandardPicker() {
+  const overlay = document.getElementById('first-run-overlay');
+  const grid    = document.getElementById('first-run-std-grid');
+  if (!overlay || !grid) return;
+
+  // Render all standards as toggleable rows
+  grid.innerHTML = Object.values(STANDARDS).map(std => `
+    <div class="std-enable-row" id="frow-${std.id}" onclick="toggleFirstRunStd('${std.id}')" style="cursor:pointer">
+      <div class="std-enable-dot" style="background:${std.color}"></div>
+      <div class="std-enable-info">
+        <div class="std-enable-name">${std.label}</div>
+        <div class="std-enable-meta">${std.controls.length} controls · ${std.pills.join(' · ')}</div>
+      </div>
+      <input type="checkbox" id="fchk-${std.id}" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer" onclick="event.stopPropagation();toggleFirstRunStd('${std.id}')">
+    </div>`).join('');
+
+  overlay.classList.remove('gone');
+}
+
+function toggleFirstRunStd(id) {
+  const chk = document.getElementById('fchk-' + id);
+  const row = document.getElementById('frow-' + id);
+  if (!chk) return;
+  chk.checked = !chk.checked;
+  row.classList.toggle('active-std', chk.checked);
+  document.getElementById('first-run-err').textContent = '';
+}
+
+async function firstRunSubmit() {
+  const selected = Object.keys(STANDARDS).filter(id => {
+    const chk = document.getElementById('fchk-' + id);
+    return chk && chk.checked;
+  });
+
+  if (selected.length === 0) {
+    document.getElementById('first-run-err').textContent = 'Please select at least one standard.';
+    return;
+  }
+
+  await saveActiveStandards(selected);
+  document.getElementById('first-run-overlay').classList.add('gone');
+
+  // Auto-launch if only one selected, else show picker
+  if (selected.length === 1) {
+    pickerSel = selected[0];
+    await launchStandard();
+  } else {
+    showPickerScreen();
+  }
+}
+
+// ════════════════════════════════════════════════════════
+//  MANAGE STANDARDS (admin settings card)
+// ════════════════════════════════════════════════════════
+async function renderManageStandardsCard() {
+  const grid = document.getElementById('settings-std-grid');
+  if (!grid) return;
+  await loadActiveStandards();
+
+  grid.innerHTML = Object.values(STANDARDS).map(std => {
+    const isActive = activeStandards.includes(std.id);
+    return `<div class="std-enable-row ${isActive ? 'active-std' : ''}">
+      <div class="std-enable-dot" style="background:${std.color}"></div>
+      <div class="std-enable-info">
+        <div class="std-enable-name">
+          ${isActive ? '<span class="std-enable-badge">Active</span>' : ''}${std.label}
+        </div>
+        <div class="std-enable-meta">${std.controls.length} controls · ${std.pills.join(' · ')}</div>
+      </div>
+      ${isActive
+        ? `<button class="btn btn-danger" onclick="disableStandard('${std.id}')" style="font-size:11px;padding:4px 12px"
+            ${activeStandards.length <= 1 ? 'disabled title="Cannot disable the last active standard"' : ''}>Disable</button>`
+        : `<button class="btn btn-primary" onclick="enableStandard('${std.id}')" style="font-size:11px;padding:4px 12px">Enable</button>`
+      }
+    </div>`;
+  }).join('');
+}
+
+async function enableStandard(id) {
+  if (activeStandards.includes(id)) return;
+  const updated = [...activeStandards, id];
+  await saveActiveStandards(updated);
+  await renderManageStandardsCard();
+  toast(`${STANDARDS[id].label} enabled.`, 'ok');
+}
+
+async function disableStandard(id) {
+  if (activeStandards.length <= 1) {
+    toast('Cannot disable the last active standard.', 'err');
+    return;
+  }
+  const std = STANDARDS[id];
+  const confirmed = await window.api.databaseResetWithConfirm
+    ? null  // use custom confirm below
+    : null;
+
+  // Use native dialog for confirmation
+  const result = await window.api.confirmDialog({
+    title:     `Disable ${std.label}?`,
+    message:   `This will permanently delete all assessment data for ${std.label}.`,
+    detail:    'User accounts and the audit log are preserved. This cannot be undone.',
+    buttons:   ['Cancel', 'Disable & Delete Data'],
+    defaultId: 0,
+    cancelId:  0,
+  });
+  if (!result) return;
+
+  // Clear assessment data for this standard
+  await window.api.clearAll(id);
+
+  // Remove from active list
+  const updated = activeStandards.filter(s => s !== id);
+  await saveActiveStandards(updated);
+  await renderManageStandardsCard();
+  toast(`${std.label} disabled and data removed.`, 'ok');
+
+  // If currently in this standard, go back to picker
+  if (activeStd && activeStd.id === id) {
+    await backToPicker();
+  }
+}
+
+// Hook openSettings to refresh manage-standards card for admins
+const _origOpenSettings2 = openSettings;
+openSettings = function() {
+  _origOpenSettings2();
+  updateUserPill();
+  if (currentUser?.role === 'admin') {
+    renderUsersList();
+    renderManageStandardsCard();
+    const card = document.getElementById('manage-standards-card');
+    if (card) card.style.display = '';
+  }
+};
 
 bootAuth();
 </script>

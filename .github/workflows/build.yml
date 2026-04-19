@@ -31,11 +31,39 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Resolve version
+        id: version
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "push" -and "${{ github.ref }}".StartsWith("refs/tags/v")) {
+            # Tag push — strip the leading 'v'
+            $ver = "${{ github.ref_name }}".TrimStart("v")
+          } elseif ("${{ github.event.inputs.version }}" -ne "") {
+            # Manual run with version input
+            $ver = "${{ github.event.inputs.version }}"
+          } else {
+            # Manual run with no version — use current package.json version
+            $pkg = Get-Content package.json | ConvertFrom-Json
+            $ver = $pkg.version
+          }
+          Write-Host "Resolved version: $ver"
+          echo "VERSION=$ver" >> $env:GITHUB_OUTPUT
+
+      - name: Stamp version into package.json
+        shell: pwsh
+        run: |
+          $ver = "${{ steps.version.outputs.VERSION }}"
+          $pkg = Get-Content package.json -Raw | ConvertFrom-Json
+          $pkg.version = $ver
+          $pkg | ConvertTo-Json -Depth 10 | Set-Content package.json
+          Write-Host "package.json version set to: $ver"
+
       - name: Verify environment
         shell: pwsh
         run: |
           Write-Host "Node: $(node --version)"
           Write-Host "npm:  $(npm --version)"
+          Write-Host "Version: ${{ steps.version.outputs.VERSION }}"
           Write-Host "Trigger: ${{ github.event_name }}"
           Write-Host "Ref:     ${{ github.ref }}"
 
@@ -65,8 +93,6 @@ jobs:
         env:
           GH_TOKEN:                    ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
-          # Repo info for electron-updater's app-update.yml embedded in the installer
-          # electron-builder reads GITHUB_REPOSITORY automatically (owner/repo format)
           EP_DRAFT:                    false
           EP_PRE_RELEASE:              false
 
@@ -81,23 +107,22 @@ jobs:
             exit 1
           }
 
-      # Always upload as artifact — works for both tag push and manual runs
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GRC-Assessment-Platform-Installer
+          name: GRC-Assessment-Platform-Installer-v${{ steps.version.outputs.VERSION }}
           path: dist/GRC-Assessment-Platform-Setup-*.exe
           retention-days: 90
 
-      # Create release when triggered by a tag push
+      # Create release on tag push
       - name: Create Release (tag push)
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: dist/GRC-Assessment-Platform-Setup-*.exe
-          name: GRC Assessment Platform ${{ github.ref_name }}
+          name: GRC Assessment Platform v${{ steps.version.outputs.VERSION }}
           body: |
-            ## GRC Assessment Platform ${{ github.ref_name }}
+            ## GRC Assessment Platform v${{ steps.version.outputs.VERSION }}
 
             ### Install
             1. Download `GRC-Assessment-Platform-Setup-*.exe` below
@@ -116,16 +141,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Create release when triggered manually with a version number entered
+      # Create release on manual run with version
       - name: Create Release (manual)
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.version != ''
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ github.event.inputs.version }}
+          tag_name: v${{ steps.version.outputs.VERSION }}
           files: dist/GRC-Assessment-Platform-Setup-*.exe
-          name: GRC Assessment Platform v${{ github.event.inputs.version }}
+          name: GRC Assessment Platform v${{ steps.version.outputs.VERSION }}
           body: |
-            ## GRC Assessment Platform v${{ github.event.inputs.version }}
+            ## GRC Assessment Platform v${{ steps.version.outputs.VERSION }}
 
             ### Install
             1. Download `GRC-Assessment-Platform-Setup-*.exe` below
